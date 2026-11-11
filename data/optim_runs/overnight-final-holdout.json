@@ -1,0 +1,443 @@
+{
+ "label": "final",
+ "set": "holdout",
+ "days": 2,
+ "aggregate": {
+  "n": 24,
+  "errors": 0,
+  "comfort": 0.2217083333333333,
+  "stay": 14.704166666666666,
+  "block": 0.32716666666666666,
+  "replans": 7.5625,
+  "mean_occupancy": 6.112291666666667,
+  "comfort_default": 0.06804166666666667,
+  "stay_default": 8.404166666666667,
+  "comfort_demo": 0.375375,
+  "stay_demo": 21.004166666666666
+ },
+ "runs": [
+  {
+   "seed": 11,
+   "start": "2024-07-12",
+   "preset": null,
+   "key": "s11-2024-07-12-default",
+   "comfort": 0.058499999999999996,
+   "comfort_by_day": [
+    0.054,
+    0.063
+   ],
+   "stay": 7.25,
+   "block": 0.16549999999999998,
+   "replans": 5.0,
+   "mean_occupancy": 1.41,
+   "entered": 155.0,
+   "secs": 3.8
+  },
+  {
+   "seed": 11,
+   "start": "2024-07-12",
+   "preset": "demo",
+   "key": "s11-2024-07-12-demo",
+   "comfort": 0.42600000000000005,
+   "comfort_by_day": [
+    0.392,
+    0.46
+   ],
+   "stay": 21.4,
+   "block": 0.479,
+   "replans": 11.5,
+   "mean_occupancy": 11.559999999999999,
+   "entered": 488.5,
+   "secs": 4.1
+  },
+  {
+   "seed": 11,
+   "start": "2024-10-14",
+   "preset": null,
+   "key": "s11-2024-10-14-default",
+   "comfort": 0.068,
+   "comfort_by_day": [
+    0.059,
+    0.077
+   ],
+   "stay": 8.15,
+   "block": 0.158,
+   "replans": 4.0,
+   "mean_occupancy": 1.1600000000000001,
+   "entered": 110.0,
+   "secs": 3.9
+  },
+  {
+   "seed": 11,
+   "start": "2024-10-14",
+   "preset": "demo",
+   "key": "s11-2024-10-14-demo",
+   "comfort": 0.383,
+   "comfort_by_day": [
+    0.375,
+    0.391
+   ],
+   "stay": 25.3,
+   "block": 0.467,
+   "replans": 9.5,
+   "mean_occupancy": 8.98,
+   "entered": 313.5,
+   "secs": 4.0
+  },
+  {
+   "seed": 12,
+   "start": "2024-07-12",
+   "preset": null,
+   "key": "s12-2024-07-12-default",
+   "comfort": 0.0795,
+   "comfort_by_day": [
+    0.065,
+    0.094
+   ],
+   "stay": 7.95,
+   "block": 0.2005,
+   "replans": 4.5,
+   "mean_occupancy": 2.045,
+   "entered": 192.0,
+   "secs": 3.9
+  },
+  {
+   "seed": 12,
+   "start": "2024-07-12",
+   "preset": "demo",
+   "key": "s12-2024-07-12-demo",
+   "comfort": 0.3425,
+   "comfort_by_day": [
+    0.311,
+    0.374
+   ],
+   "stay": 19.0,
+   "block": 0.4545,
+   "replans": 12.0,
+   "mean_occupancy": 12.79,
+   "entered": 601.0,
+   "secs": 4.1
+  },
+  {
+   "seed": 12,
+   "start": "2024-10-14",
+   "preset": null,
+   "key": "s12-2024-10-14-default",
+   "comfort": 0.0455,
+   "comfort_by_day": [
+    0.052,
+    0.039
+   ],
+   "stay": 7.35,
+   "block": 0.155,
+   "replans": 4.0,
+   "mean_occupancy": 1.1,
+   "entered": 111.5,
+   "secs": 4.0
+  },
+  {
+   "seed": 12,
+   "start": "2024-10-14",
+   "preset": "demo",
+   "key": "s12-2024-10-14-demo",
+   "comfort": 0.2835,
+   "comfort_by_day": [
+    0.301,
+    0.266
+   ],
+   "stay": 21.2,
+   "block": 0.44599999999999995,
+   "replans": 11.0,
+   "mean_occupancy": 9.005,
+   "entered": 358.5,
+   "secs": 4.0
+  },
+  {
+   "seed": 13,
+   "start": "2024-07-12",
+   "preset": null,
+   "key": "s13-2024-07-12-default",
+   "comfort": 0.0725,
+   "comfort_by_day": [
+    0.087,
+    0.058
+   ],
+   "stay": 7.95,
+   "block": 0.212,
+   "replans": 4.5,
+   "mean_occupancy": 2.11,
+   "entered": 211.0,
+   "secs": 3.7
+  },
+  {
+   "seed": 13,
+   "start": "2024-07-12",
+   "preset": "demo",
+   "key": "s13-2024-07-12-demo",
+   "comfort": 0.40549999999999997,
+   "comfort_by_day": [
+    0.401,
+    0.41
+   ],
+   "stay": 19.450000000000003,
+   "block": 0.4945,
+   "replans": 13.5,
+   "mean_occupancy": 12.645,
+   "entered": 607.0,
+   "secs": 3.8
+  },
+  {
+   "seed": 13,
+   "start": "2024-10-14",
+   "preset": null,
+   "key": "s13-2024-10-14-default",
+   "comfort": 0.0325,
+   "comfort_by_day": [
+    0.032,
+    0.033
+   ],
+   "stay": 7.6,
+   "block": 0.137,
+   "replans": 4.0,
+   "mean_occupancy": 0.845,
+   "entered": 101.0,
+   "secs": 3.6
+  },
+  {
+   "seed": 13,
+   "start": "2024-10-14",
+   "preset": "demo",
+   "key": "s13-2024-10-14-demo",
+   "comfort": 0.3755,
+   "comfort_by_day": [
+    0.386,
+    0.365
+   ],
+   "stay": 20.4,
+   "block": 0.41800000000000004,
+   "replans": 10.0,
+   "mean_occupancy": 7.835,
+   "entered": 314.5,
+   "secs": 3.7
+  },
+  {
+   "seed": 14,
+   "start": "2024-07-12",
+   "preset": null,
+   "key": "s14-2024-07-12-default",
+   "comfort": 0.043,
+   "comfort_by_day": [
+    0.043,
+    0.043
+   ],
+   "stay": 7.4,
+   "block": 0.193,
+   "replans": 4.0,
+   "mean_occupancy": 1.69,
+   "entered": 188.0,
+   "secs": 3.7
+  },
+  {
+   "seed": 14,
+   "start": "2024-07-12",
+   "preset": "demo",
+   "key": "s14-2024-07-12-demo",
+   "comfort": 0.376,
+   "comfort_by_day": [
+    0.342,
+    0.41
+   ],
+   "stay": 19.6,
+   "block": 0.5015000000000001,
+   "replans": 10.0,
+   "mean_occupancy": 10.955,
+   "entered": 471.5,
+   "secs": 3.8
+  },
+  {
+   "seed": 14,
+   "start": "2024-10-14",
+   "preset": null,
+   "key": "s14-2024-10-14-default",
+   "comfort": 0.025,
+   "comfort_by_day": [
+    0.008,
+    0.042
+   ],
+   "stay": 9.1,
+   "block": 0.1895,
+   "replans": 3.5,
+   "mean_occupancy": 1.115,
+   "entered": 114.5,
+   "secs": 3.7
+  },
+  {
+   "seed": 14,
+   "start": "2024-10-14",
+   "preset": "demo",
+   "key": "s14-2024-10-14-demo",
+   "comfort": 0.3695,
+   "comfort_by_day": [
+    0.363,
+    0.376
+   ],
+   "stay": 20.2,
+   "block": 0.4535,
+   "replans": 8.0,
+   "mean_occupancy": 8.120000000000001,
+   "entered": 338.0,
+   "secs": 3.8
+  },
+  {
+   "seed": 15,
+   "start": "2024-07-12",
+   "preset": null,
+   "key": "s15-2024-07-12-default",
+   "comfort": 0.0935,
+   "comfort_by_day": [
+    0.101,
+    0.086
+   ],
+   "stay": 11.3,
+   "block": 0.23299999999999998,
+   "replans": 8.0,
+   "mean_occupancy": 2.74,
+   "entered": 205.5,
+   "secs": 3.8
+  },
+  {
+   "seed": 15,
+   "start": "2024-07-12",
+   "preset": "demo",
+   "key": "s15-2024-07-12-demo",
+   "comfort": 0.46199999999999997,
+   "comfort_by_day": [
+    0.42,
+    0.504
+   ],
+   "stay": 27.25,
+   "block": 0.5175000000000001,
+   "replans": 13.0,
+   "mean_occupancy": 16.28,
+   "entered": 636.0,
+   "secs": 3.9
+  },
+  {
+   "seed": 15,
+   "start": "2024-10-14",
+   "preset": null,
+   "key": "s15-2024-10-14-default",
+   "comfort": 0.045,
+   "comfort_by_day": [
+    0.015,
+    0.075
+   ],
+   "stay": 8.25,
+   "block": 0.154,
+   "replans": 3.5,
+   "mean_occupancy": 0.99,
+   "entered": 95.5,
+   "secs": 3.8
+  },
+  {
+   "seed": 15,
+   "start": "2024-10-14",
+   "preset": "demo",
+   "key": "s15-2024-10-14-demo",
+   "comfort": 0.33099999999999996,
+   "comfort_by_day": [
+    0.242,
+    0.42
+   ],
+   "stay": 19.6,
+   "block": 0.46099999999999997,
+   "replans": 11.5,
+   "mean_occupancy": 8.67,
+   "entered": 359.0,
+   "secs": 3.8
+  },
+  {
+   "seed": 16,
+   "start": "2024-07-12",
+   "preset": null,
+   "key": "s16-2024-07-12-default",
+   "comfort": 0.105,
+   "comfort_by_day": [
+    0.107,
+    0.103
+   ],
+   "stay": 8.649999999999999,
+   "block": 0.219,
+   "replans": 4.5,
+   "mean_occupancy": 2.115,
+   "entered": 197.0,
+   "secs": 3.8
+  },
+  {
+   "seed": 16,
+   "start": "2024-07-12",
+   "preset": "demo",
+   "key": "s16-2024-07-12-demo",
+   "comfort": 0.40449999999999997,
+   "comfort_by_day": [
+    0.4,
+    0.409
+   ],
+   "stay": 19.9,
+   "block": 0.497,
+   "replans": 12.5,
+   "mean_occupancy": 12.765,
+   "entered": 552.5,
+   "secs": 3.8
+  },
+  {
+   "seed": 16,
+   "start": "2024-10-14",
+   "preset": null,
+   "key": "s16-2024-10-14-default",
+   "comfort": 0.14850000000000002,
+   "comfort_by_day": [
+    0.127,
+    0.17
+   ],
+   "stay": 9.9,
+   "block": 0.22,
+   "replans": 3.0,
+   "mean_occupancy": 2.045,
+   "entered": 161.0,
+   "secs": 3.8
+  },
+  {
+   "seed": 16,
+   "start": "2024-10-14",
+   "preset": "demo",
+   "key": "s16-2024-10-14-demo",
+   "comfort": 0.34550000000000003,
+   "comfort_by_day": [
+    0.343,
+    0.348
+   ],
+   "stay": 18.75,
+   "block": 0.426,
+   "replans": 6.5,
+   "mean_occupancy": 7.725,
+   "entered": 360.0,
+   "secs": 3.8
+  }
+ ],
+ "wall_secs": 11.8,
+ "compare": {
+  "pairs": 24,
+  "comfort_delta": 0.07583333333333332,
+  "comfort_wins": 20,
+  "comfort_losses": 4,
+  "stay_delta": 1.7979166666666668,
+  "replans_new": 7.5625,
+  "replans_ref": 6.333333333333333,
+  "worst_comfort_delta": -0.19850000000000012,
+  "best_comfort_delta": 0.2135,
+  "verdict": "ACCEPT",
+  "reasons": [],
+  "against": "baseline"
+ }
+}

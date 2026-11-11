@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vibechecker Day Timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#15120e; --surface:#1d1915; --raise:#26211b; --line:#352e26; --line-soft:#2a241e;
+  --ink:#ece4d6; --ink-2:#b9ae9c; --ink-3:#7d7364;
+  --amber:#e9a83e; --amber-soft:rgba(233,168,62,.16); --amber-dim:#8a6524;
+  --coral:#e2705d; --violet:#a58cf0; --mint:#7fcaa5; --sky:#7fb4d8;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45}
+body{min-height:100vh}
+button{font:inherit;color:inherit;background:var(--raise);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+button:hover{border-color:var(--ink-3)}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button.primary{background:var(--amber);color:#1a1207;border-color:var(--amber);font-weight:600}
+button.on{border-color:var(--amber);color:var(--amber)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+
+header{display:grid;grid-template-columns:1fr auto;gap:12px 32px;align-items:end;padding:16px 28px 12px;border-bottom:1px solid var(--line)}
+header h1{margin:0 0 2px;font-size:20px;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+header .facts{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--ink-2);font-size:13px}
+header .facts b{color:var(--ink);font-weight:500}
+.notes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--ink-2)}
+.chip.note{border-color:var(--amber-dim);color:var(--ink)}
+.chip.note::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--amber)}
+.clockbox{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.clock{font-family:var(--mono);font-size:40px;font-weight:500;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums;text-align:right}
+.clock small{font-size:13px;color:var(--ink-3);display:block;text-align:right;margin-top:4px;letter-spacing:0}
+.controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.controls .speed{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.controls label{font-size:12px;color:var(--ink-2);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+
+.daystrip{display:flex;gap:6px;padding:8px 28px;border-bottom:1px solid var(--line);overflow-x:auto;background:var(--surface)}
+.daystrip button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:5px 10px;min-width:118px;background:transparent}
+.daystrip button.on{background:var(--raise);border-color:var(--amber)}
+.daystrip .d{font-size:12.5px;color:var(--ink)}
+.daystrip .m{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.daystrip .m b{color:var(--amber);font-weight:500}
+.daystrip[hidden]{display:none}
+
+main{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:0;min-height:calc(100vh - 90px)}
+@media (max-width:1100px){main{grid-template-columns:1fr}}
+.stage{padding:14px 20px 24px 28px;min-width:0}
+aside{border-left:1px solid var(--line);background:var(--surface);min-width:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
+.side-rest{flex:0 0 auto;max-height:34vh;overflow:auto;border-top:1px solid var(--line)}
+@media (max-width:1100px){aside{border-left:0;border-top:1px solid var(--line);position:static;height:auto;overflow:visible}.feed{max-height:50vh}}
+
+.lanes{position:relative;user-select:none}
+.lane{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:stretch;border-top:1px solid var(--line-soft)}
+.lane:first-child{border-top:0}
+.lane .label{padding:8px 10px 8px 0;position:relative;font-size:12px;color:var(--ink-2)}
+.lane .label .unit{display:block;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.lane .label .now{display:block;font-family:var(--mono);font-size:12px;color:var(--amber);margin-top:2px}
+.lane svg{display:block;width:100%;height:100%}
+.lane.axis{height:40px;border-top:0}
+.lane.owner{height:38px}
+.lane.owner .label{padding-top:7px;white-space:nowrap}
+.lane.owner .label .unit{display:inline;margin-left:4px}
+.lane.plan{height:74px}
+.lane.lever{height:78px}
+.lane.room{height:78px}
+.hit{position:absolute;inset:0;left:96px;cursor:ew-resize}
+.playhead{position:absolute;top:0;bottom:0;width:0;border-left:1px solid var(--amber);pointer-events:none;box-shadow:0 0 12px rgba(233,168,62,.35)}
+.playhead::after{content:"";position:absolute;top:0;left:-5px;border:5px solid transparent;border-top:8px solid var(--amber)}
+
+svg text{font-family:var(--mono);font-size:10.5px;fill:var(--ink-3)}
+svg .tick{stroke:var(--line);stroke-width:1}
+svg .grid{stroke:var(--line-soft);stroke-width:1}
+svg .plan-line{fill:none;stroke:var(--amber);stroke-width:1.5;stroke-dasharray:3 3;opacity:.8}
+svg .ghost{fill:none;stroke:var(--ink-3);stroke-width:1.2;stroke-dasharray:2 3;opacity:.6}
+svg .applied{fill:none;stroke:var(--amber);stroke-width:1.6}
+svg .room-line{fill:none;stroke:var(--ink);stroke-width:1.4;opacity:.85}
+svg .room-fill{fill:var(--ink);opacity:.08}
+svg .cmp-line{fill:none;stroke-width:1.2;opacity:.8}
+svg .cmp-fixed{stroke:var(--ink-3)}
+svg .cmp-heuristic{stroke:var(--sky)}
+svg .cmp-model{stroke:var(--mint)}
+svg .cmp-push{stroke-width:1;opacity:.7}
+svg .bound{stroke:var(--coral);stroke-width:1;stroke-dasharray:2 4;opacity:.7}
+svg .ideal{fill:var(--mint);opacity:.07}
+svg .push-mark{stroke:var(--amber);stroke-width:1;opacity:.55}
+svg .kept-mark{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:2 2;opacity:.7}
+svg .fire{fill:var(--coral)}
+svg .fire.future{opacity:.3}
+svg .block{stroke:var(--ground);stroke-width:1.5}
+svg .block.daily{fill:#3a3128}
+svg .block.pushed{fill:#5a4520}
+svg .block.fresh{fill:var(--amber)}
+svg .block.rule{fill:#2f3d36}
+svg .block-text{fill:var(--ink);font-size:11px;pointer-events:none}
+svg .block-text.on-fresh{fill:#1a1207}
+svg .block-sub{font-size:10px;fill:var(--ink-2);pointer-events:none}
+svg .block-sub.on-fresh{fill:#3a2a0c}
+svg .note-window{fill:var(--amber);opacity:.07}
+svg .forecast{font-size:10px;fill:var(--ink-2)}
+svg .owner-mark{fill:var(--amber)}
+svg .owner-text{font-size:10px;fill:var(--ink-2)}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 0 0 96px;font-size:11.5px;color:var(--ink-3)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:14px;height:8px;border-radius:2px}
+.hint{font-size:11.5px;color:var(--ink-3);margin-top:6px}
+
+.panel{padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel h2{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:500;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.panel h2 .mono{color:var(--ink-2);letter-spacing:0;text-transform:none;font-size:11.5px}
+.inforce .settings{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}
+.inforce .settings div{background:var(--raise);border-radius:4px;padding:6px 8px}
+.inforce .settings .v{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--ink)}
+.inforce .settings .k{font-size:10.5px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase}
+.inforce .settings .was{display:block;font-family:var(--mono);font-size:11px;color:var(--ink-3);text-decoration:line-through;min-height:1.2em}
+.inforce .settings .was.up{color:var(--mint)}
+.inforce .why{font-size:12.5px;color:var(--ink-2);max-width:62ch}
+.assume{display:inline-flex;gap:6px;margin:2px 0 6px;flex-wrap:wrap}
+.assume span{font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:3px;background:var(--raise);color:var(--ink-2)}
+
+.feed{flex:1 1 0;min-height:220px;overflow:auto;padding:6px 0}
+.ev{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:10px 18px;border-bottom:1px solid var(--line-soft);cursor:pointer}
+.ev:hover{background:var(--raise)}
+.ev.future{opacity:.28}
+.ev.current{background:var(--amber-soft)}
+.ev .when{font-family:var(--mono);font-size:12.5px;color:var(--ink-2);padding-top:1px}
+.ev .fired{font-size:12.5px;color:var(--ink);max-width:60ch}
+.ev .fired::before{content:"▲ ";color:var(--coral);font-size:9px;vertical-align:1px}
+.ev .fired.owner::before{content:"✉ ";color:var(--amber);font-size:11px}
+.ev .fired.rule::before{content:"⚙ ";color:var(--mint);font-size:11px}
+.ev .out{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;align-items:center}
+.pill{font-size:10.5px;font-family:var(--mono);padding:1px 7px;border-radius:3px;border:1px solid var(--line);color:var(--ink-2)}
+.pill.pushed{border-color:var(--amber);color:var(--amber)}
+.pill.kept{border-color:var(--ink-3);color:var(--ink-2)}
+.pill.held{border-color:var(--mint);color:var(--mint)}
+.ev .memq{font-size:12px;color:var(--violet);margin-top:5px;max-width:60ch}
+.ev .memq::before{content:"? ";font-family:var(--mono)}
+.ev .mema{font-size:12px;color:var(--ink-2);margin:2px 0 0 14px;max-width:58ch;border-left:2px solid var(--violet);padding-left:8px}
+.ev .mema.none{color:var(--ink-3);font-style:italic}
+.ev .kept-why{font-size:12px;color:var(--ink-3);margin-top:4px;max-width:60ch}
+.ev .heldwhy{font-size:12px;color:var(--ink-3);margin-top:3px}
+.ev .push-why{font-size:12px;color:var(--ink-2);margin-top:4px;max-width:60ch;display:none}
+.ev.current .push-why,.ev.open .push-why{display:block}
+.diff{font-family:var(--mono);font-size:11px;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:4px 10px;margin:3px 0 4px}
+.diff b{font-weight:500;color:var(--amber)}
+.diff s{color:var(--ink-3)}
+
+.calls{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
+.calls button{font-size:10.5px;font-family:var(--mono);padding:1px 8px;border-radius:3px;background:transparent;color:var(--sky);border-color:var(--line)}
+.calls button.on{background:var(--raise);border-color:var(--sky)}
+.calltext{margin-top:8px;border:1px solid var(--line);border-radius:4px;background:var(--ground);overflow:hidden}
+.calltext .meta{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);padding:5px 10px;border-bottom:1px solid var(--line-soft);display:flex;justify-content:space-between;gap:10px}
+.calltext .meta b{color:var(--sky);font-weight:500}
+.calltext pre{margin:0;padding:8px 10px;font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap;word-break:break-word;max-height:320px;overflow:auto}
+.calltext pre.reply{border-top:1px dashed var(--line);color:var(--ink)}
+.calltext .who{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:6px 10px 0}
+
+.bank ul{margin:0;padding:0}
+.bank li{list-style:none;margin:0;padding:6px 0;border-bottom:1px solid var(--line-soft);font-size:12.5px}
+.bank li .q{color:var(--violet)}
+.bank li .s{color:var(--ink-3);font-size:11.5px;display:block}
+.bank li.future{opacity:.28}
+.morning .ans{font-size:12px;padding:5px 0;border-bottom:1px solid var(--line-soft)}
+.morning .ans .q{color:var(--violet)}
+.morning .ans .a{color:var(--ink-2);display:block}
+.morning .ans.unknown .a{color:var(--ink-3);font-style:italic}
+details summary{cursor:pointer;color:var(--ink-2);font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.stats div{font-size:11px;color:var(--ink-3)}
+.stats .v{display:block;font-family:var(--mono);font-size:14px;color:var(--ink)}
+table.cmp{border-collapse:collapse;width:100%;margin-top:8px;font-size:11.5px}
+table.cmp th,table.cmp td{text-align:right;padding:3px 6px;border-bottom:1px solid var(--line-soft);font-family:var(--mono)}
+table.cmp th{color:var(--ink-3);font-weight:500;font-family:var(--sans)}
+table.cmp td:first-child,table.cmp th:first-child{text-align:left}
+table.cmp td.me{color:var(--amber)}
+
+/* projection mode: bigger, fewer things */
+body.big{zoom:1.28}
+body.big .legend,body.big .hint,body.big .side-rest,body.big .daystrip .m{display:none}
+body.big .lane.plan{height:88px}
+body.big .lane.lever,body.big .lane.room{height:86px}
+body.big .feed{min-height:300px}
+@media (prefers-reduced-motion:reduce){.playhead{box-shadow:none}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="eyebrow" id="run"></div>
+    <h1 id="title"></h1>
+    <div class="facts" id="facts"></div>
+    <div class="notes" id="notes"></div>
+  </div>
+  <div class="clockbox">
+    <div class="clock"><span id="clock">08:00</span><small id="stretch"></small></div>
+    <div class="controls">
+      <button id="back" title="← 15 min">−15m</button>
+      <button id="play" class="primary" title="space">Play</button>
+      <button id="fwd" title="→ 15 min">+15m</button>
+      <button id="speed" class="speed" title="minutes per second">×20</button>
+      <label><input type="checkbox" id="pauseAt" checked> pause at events</label>
+      <button id="cmpBtn" hidden title="overlay the other runs">Compare</button>
+      <button id="bigBtn" title="bigger, for a projector">Stage</button>
+    </div>
+  </div>
+</header>
+<div class="daystrip" id="daystrip" hidden></div>
+<main>
+  <section class="stage">
+    <div class="lanes" id="lanes"></div>
+    <div class="legend" id="legend">
+      <span><i style="background:#3a3128"></i>morning plan</span>
+      <span><i style="background:#5a4520"></i>changed by an earlier push</span>
+      <span><i style="background:var(--amber)"></i>changed by the latest push</span>
+      <span><i style="background:#2f3d36"></i>set by rule</span>
+      <span><i style="border-top:2px dashed var(--amber);height:0"></i>plan as it stands now</span>
+      <span><i style="border-top:2px dotted var(--ink-3);height:0"></i>plan before the latest push</span>
+      <span><i style="border-top:2px solid var(--amber);height:0"></i>what was applied</span>
+      <span><i style="border-top:2px solid var(--ink);height:0"></i>what the room read</span>
+      <span><i style="border-top:1px dashed var(--coral);height:0"></i>comfort bound</span>
+      <span><i style="width:0;height:0;border:5px solid transparent;border-top:8px solid var(--coral);border-radius:0"></i>a detector on this quantity fired here (hover to read it)</span>
+    </div>
+    <div class="hint">Drag across the lanes or use ← → to move through the day, [ and ] to change day. Click an event on the right to jump to it.</div>
+  </section>
+  <aside>
+    <div class="panel inforce" id="inforce"></div>
+    <div class="panel" style="padding-bottom:0"><h2>What fired and what the team did <span class="mono" id="evcount"></span></h2></div>
+    <div class="feed" id="feed"></div>
+    <div class="side-rest">
+      <div class="panel bank" id="bank"></div>
+      <div class="panel morning" id="morning"></div>
+      <div class="panel" id="statsbox"></div>
+    </div>
+  </aside>
+</main>
+<script>
+const ALL = /*__DATA__*/null;
+const DAY_END = 840;
+const LEVERS = [
+  {key:"light", set:"light_set", room:"light_sensor", label:"Light", unit:"lux", fmt:v=>Math.round(v), bounds:null, fire:/lux/},
+  {key:"temperature", set:"temperature_set", room:"temperature_sensor", label:"Temperature", unit:"°C", fmt:v=>(+v).toFixed(1), bounds:[21,26], fire:/setpoint|\bC above|\bC below/},
+  {key:"volume", set:"volume", room:"noise", label:"Volume", unit:"dB", fmt:v=>Math.round(v), bounds:[40,70], fire:/dB/},
+  {key:"fan", set:"fan", room:null, label:"Fan", unit:"step 0–5", fmt:v=>Math.round(v), bounds:null, range:[0,5], fire:null},
+];
+const ROOM = [
+  {key:"occupancy", label:"People in", unit:"of 30 seats", fmt:v=>Math.round(v), range:[0,30], fill:true, fire:/seats|leaving|group/},
+  {key:"co2", label:"CO₂", unit:"ppm", fmt:v=>Math.round(v), bounds:[800,1000], fill:false, fire:/CO2/},
+];
+const CMP_CLASS = m => /fixed/.test(m)?"cmp-fixed":/heur/.test(m)?"cmp-heuristic":"cmp-model";
+
+const clock = t => `${String(8+Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;
+const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const stretchOf = t => Math.min(6, Math.floor(t/120));
+const fmtSet = {light:v=>`${Math.round(v)} lx`, temperature:v=>`${(+v).toFixed(1)}°`, volume:v=>`${Math.round(v)} dB`, fan:v=>`fan ${v}`};
+
+// ---- per-day state, filled by loadDay ----
+let D, pushes, R, byT, forecastChanges, memByT, keptByT, pushByT, callsByT, eventTs, owners, cmpDay;
+const openCalls = new Set();
+function loadDay(date){
+  D = ALL.days[date];
+  pushes = [...D.pushes].sort((a,b)=>a.t-b.t);
+  R = D.readings; byT = new Map(R.map(r=>[r.t,r]));
+  forecastChanges = []; let last=null;
+  for(const r of R){ const f=r.central_forecast_text; if(f && f!==last){ forecastChanges.push({t:r.t,text:f}); last=f; } }
+  memByT = new Map(); keptByT = new Map(); callsByT = new Map();
+  D.calls.forEach((c,i)=>{ c.id=i; if(c.t==null) return;
+    if(c.agent==="memory") memByT.set(c.t,[...new Set((memByT.get(c.t)||[]).concat(c.questions))]);
+    if(c.agent==="intraday"&&c.kept) keptByT.set(c.t,c.kept);
+    callsByT.set(c.t,(callsByT.get(c.t)||[]).concat([c])); });
+  pushByT = new Map(pushes.map(p=>[p.t,p]));
+  eventTs = new Set(D.events.map(e=>e.t));
+  owners = D.events.filter(e=>e.fired.some(f=>f.startsWith("owner says"))).map(e=>({t:e.t, text:e.fired[0].replace(/^owner says:\s*/,"")}));
+  cmpDay = Object.entries(ALL.compare).map(([name,per])=>per[date]?{name, ...per[date]}:null).filter(Boolean);
+  openCalls.clear();
+}
+const readingAt = t => byT.get(t) || byT.get(t-1) || null;
+
+// ---- the plan as it stood at minute t, and the one before the latest push ----
+function planAt(t){
+  let plan = D.morning_blocks.map(b=>({...b, origin:b.origin||{by:"daily",at:null,note:""}}));
+  let prev = plan, latest = null;
+  for(const p of pushes){
+    if(p.t > t) break;
+    prev = plan;
+    plan = plan.filter(b=>b.from < p.t).map(b=>({...b, to:Math.min(b.to, p.t)})).concat(p.blocks.map(b=>({...b})));
+    latest = p;
+  }
+  return {plan, prev, latest};
+}
+function blockClass(b, latest){
+  const o = b.origin||{};
+  if(o.by==="daily" || o.by==null) return "daily";
+  if(o.by==="rule") return "rule";
+  if(latest && o.at===latest.t) return "fresh";
+  return "pushed";
+}
+const blockAt = (plan,t) => plan.find(b=>b.from<=t && t<b.to) || plan[plan.length-1];
+function diffOf(b, prev){
+  const was = blockAt(prev, b.from); if(!was) return [];
+  return LEVERS.map(l=>({key:l.key, was:was.settings[l.key], now:b.settings[l.key]})).filter(d=>+d.was!==+d.now);
+}
+function planBefore(pushT){ const {prev} = planAt(pushT); return prev; }
+
+// ---- layout ----
+const lanesEl = document.getElementById("lanes");
+let W = 800; const L = 96, PADR = 14;
+const x = t => L + (t/DAY_END)*(W-L-PADR);
+const laneDefs = [
+  {kind:"axis", h:26},
+  {kind:"owner", h:22},
+  {kind:"plan", h:74},
+  ...LEVERS.map(l=>({kind:"lever", h:78, spec:l})),
+  ...ROOM.map(r=>({kind:"room", h:78, spec:r})),
+];
+lanesEl.innerHTML = laneDefs.map((d,i)=>`<div class="lane ${d.kind}" data-i="${i}">
+  <div class="label">${d.kind==="axis"?"":d.kind==="owner"?`Owner<span class="unit">notes · msgs</span>`:d.kind==="plan"?`Plan<span class="unit">blocks in force</span>`:`${d.spec.label}<span class="unit">${d.spec.unit}</span><span class="now" id="now-${i}"></span>`}</div>
+  <svg id="svg-${i}" preserveAspectRatio="none"></svg></div>`).join("") +
+  `<div class="hit" id="hit"></div><div class="playhead" id="playhead"></div>`;
+
+function scale(min,max,h,pad=10){ return v => h-pad - ((v-min)/(max-min||1))*(h-2*pad); }
+function extent(vals, floor){ const f=vals.filter(v=>v!=null && !isNaN(v)); if(!f.length) return floor||[0,1]; let lo=Math.min(...f), hi=Math.max(...f); if(floor){lo=Math.min(lo,floor[0]);hi=Math.max(hi,floor[1]);} const p=(hi-lo)*.1||1; return [lo-p, hi+p]; }
+function stepPath(points, xf, yf){ let d="", prev=null; for(const p of points){ if(p.v==null){ prev=null; continue; } const X=xf(p.t), Y=yf(p.v); d += prev==null ? `M${X},${Y}` : `H${X}V${Y}`; prev=p; } return d; }
+function linePath(points, xf, yf){ let d="", pen=false; for(const p of points){ if(p.v==null){pen=false;continue;} d += (pen?"L":"M")+xf(p.t).toFixed(1)+","+yf(p.v).toFixed(1); pen=true; } return d; }
+function niceTicks(lo,hi,n){ const span=hi-lo; const raw=span/n; const mag=Math.pow(10,Math.floor(Math.log10(raw||1))); const step=[1,2,2.5,5,10].map(m=>m*mag).find(s=>span/s<=n+1)||mag; const out=[]; for(let v=Math.ceil(lo/step)*step; v<=hi; v+=step) out.push(+v.toFixed(6)); return out; }
+function wx(text){ const t=text.toLowerCase(); if(t.includes("thunder")) return "⛈ "+text; if(t.includes("shower")||t.includes("rain")) return "🌧 "+text; if(t.includes("cloud")) return "☁ "+text; return "☀ "+text; }
+const planPoints = (plan,key) => plan.flatMap(b=>[{t:b.from,v:b.settings[key]},{t:b.to,v:b.settings[key]}]);
+function fireMarks(spec, h, t){ if(!spec.fire) return ""; return D.events.filter(e=>e.fired.some(f=>spec.fire.test(f))).map(e=>`<path class="fire ${e.t>t?"future":""}" d="M${x(e.t)-4},2 h8 l-4,7 z"><title>${esc(e.clock+" · "+e.fired[0]+"\n"+(e.outcome==="pushed"?"→ pushed":"→ kept"))}</title></path>`).join(""); }
+
+function renderAxis(svg, h){
+  let s="";
+  for(let t=0;t<=DAY_END;t+=60){ s+=`<line class="tick" x1="${x(t)}" x2="${x(t)}" y1="${h-6}" y2="${h}"/><text x="${x(t)+3}" y="${h-9}">${clock(t)}</text>`; }
+  let lastX=-1e9; for(const f of forecastChanges){ s+=`<line class="kept-mark" x1="${x(f.t)}" x2="${x(f.t)}" y1="4" y2="${h-14}"/>`; if(x(f.t)-lastX>120){ s+=`<text class="forecast" x="${x(f.t)+4}" y="13">${esc(wx(f.text))}</text>`; lastX=x(f.t); } }
+  s+=`<text class="forecast" x="${x(0)-4}" y="13" text-anchor="end" style="fill:var(--ink-3)">2-h forecast</text>`;
+  svg.innerHTML=s;
+}
+function renderOwner(svg, h){
+  let s="";
+  const mid=h/2;
+  for(const n of D.notes){ if(n.from==null) continue; s+=`<rect class="note-window" x="${x(n.from)}" y="2" width="${x(n.to)-x(n.from)}" height="${mid-3}" style="opacity:.25"/><text class="owner-text" x="${x(n.from)+4}" y="${mid-4}">📅 ${esc(n.text)}</text>`; }
+  for(const o of owners){ s+=`<path class="owner-mark" d="M${x(o.t)-5},${h-5} h10 v-8 h-10 z M${x(o.t)-5},${h-13} l5,4 l5,-4"/><text class="owner-text" x="${x(o.t)+8}" y="${h-7}">✉ ${esc(o.text)}</text>`; }
+  svg.innerHTML=s;
+}
+function renderPlan(svg, h, t){
+  const {plan, latest} = planAt(t);
+  let s="";
+  for(const n of D.notes){ if(n.from!=null) s+=`<rect class="note-window" x="${x(n.from)}" y="0" width="${x(n.to)-x(n.from)}" height="${h}"/>`; }
+  const top=14, bh=h-22;
+  plan.forEach((b,k)=>{
+    const X=x(b.from), Wd=Math.max(1,x(b.to)-x(b.from)); const cls=blockClass(b,latest);
+    s+=`<clipPath id="clip${k}"><rect x="${X}" y="${top}" width="${Wd}" height="${bh}"/></clipPath><g clip-path="url(#clip${k})">`;
+    s+=`<rect class="block ${cls}" x="${X}" y="${top}" width="${Wd}" height="${bh}" rx="2"><title>${esc(clock(b.from)+"–"+clock(b.to)+"\n"+(b.reasons||""))}</title></rect>`;
+    const st=b.settings||{}; const on = cls==="fresh"?" on-fresh":"";
+    const full=`${Math.round(st.light)} lx · ${(+st.temperature).toFixed(1)}° · ${Math.round(st.volume)} dB · fan ${st.fan}`, mid=`${Math.round(st.light)} lx · ${(+st.temperature).toFixed(1)}° · ${Math.round(st.volume)} dB`, short=`${Math.round(st.light)} · ${(+st.temperature).toFixed(1)}°`;
+    const label = Wd>175?full:Wd>130?mid:Wd>70?short:Wd>34?`${(+st.temperature).toFixed(1)}°`:"";
+    if(label) s+=`<text class="block-text${on}" x="${X+6}" y="${top+16}">${label}</text>`;
+    if(b.assumes){ const pushed=b.origin&&b.origin.by&&b.origin.by!=="daily"?` · pushed ${clock(b.origin.at)}`:""; const sub = Wd>175?`${b.assumes.weather||""} · ${b.assumes.crowd||""}${pushed}`:Wd>95?`${b.assumes.weather||""} · ${b.assumes.crowd||""}`:Wd>50?`${b.assumes.crowd||""}`:""; if(sub) s+=`<text class="block-sub${on}" x="${X+6}" y="${top+bh-7}">${esc(sub)}</text>`; }
+    s+=`</g>`;
+  });
+  for(const p of pushes){ s+=`<line class="push-mark" x1="${x(p.t)}" x2="${x(p.t)}" y1="2" y2="${h-2}"/>`; }
+  for(const e of D.events){ if(e.outcome==="kept") s+=`<line class="kept-mark" x1="${x(e.t)}" x2="${x(e.t)}" y1="2" y2="${top}"/>`; }
+  svg.innerHTML=s;
+}
+function renderLever(svg, h, spec, t, i){
+  const {plan, prev, latest} = planAt(t);
+  const planPts = planPoints(plan, spec.key);
+  const ghostPts = latest ? planPoints(prev, spec.key).filter(p=>p.t>=latest.t) : [];
+  const applied = R.filter(r=>r.t<=t).map(r=>({t:r.t, v:r[spec.set]}));
+  const room = spec.room ? R.filter(r=>r.t<=t).map(r=>({t:r.t, v:r[spec.room]})) : [];
+  const vals = [...planPts.map(p=>p.v), ...ghostPts.map(p=>p.v), ...applied.map(p=>p.v), ...room.map(p=>p.v), ...(spec.bounds||[])];
+  const [lo,hi] = spec.range || extent(vals);
+  const y = scale(lo,hi,h);
+  let s="";
+  for(const g of niceTicks(lo,hi,3)){ s+=`<line class="grid" x1="${x(0)}" x2="${x(DAY_END)}" y1="${y(g)}" y2="${y(g)}"/><text x="${x(DAY_END)-2}" y="${y(g)-2}" text-anchor="end">${spec.fmt(g)}</text>`; }
+  if(spec.bounds) for(const b of spec.bounds){ s+=`<line class="bound" x1="${x(0)}" x2="${x(DAY_END)}" y1="${y(b)}" y2="${y(b)}"/>`; }
+  if(room.length) s+=`<path class="room-line" d="${linePath(room,x,y)}"/>`;
+  if(ghostPts.length){ ghostPts.unshift({t:latest.t, v:blockAt(prev,latest.t)?.settings[spec.key]}); s+=`<path class="ghost" d="${stepPath(ghostPts,x,y)}"/>`; }
+  s+=`<path class="plan-line" d="${stepPath(planPts,x,y)}"/>`;
+  if(applied.length) s+=`<path class="applied" d="${stepPath(applied,x,y)}"/>`;
+  s+=fireMarks(spec,h,t);
+  svg.innerHTML=s;
+  const r=readingAt(t); const now=document.getElementById(`now-${i}`);
+  if(r){ const set=r[spec.set], rm=spec.room?r[spec.room]:null; now.textContent = set!=null ? `${spec.fmt(set)}${rm!=null?` → ${spec.fmt(rm)}`:""}` : ""; } else now.textContent="";
+}
+function renderRoom(svg, h, spec, t, i){
+  const pts = R.filter(r=>r.t<=t).map(r=>({t:r.t, v:r[spec.key]}));
+  const all = R.map(r=>r[spec.key]);
+  const [lo,hi] = spec.range || extent(all, spec.bounds?[spec.bounds[0]-100, spec.bounds[1]+50]:null);
+  const y = scale(lo,hi,h);
+  let s="";
+  if(spec.key==="occupancy"){ s+=`<rect class="ideal" x="${x(0)}" y="${y(30*.55)}" width="${x(DAY_END)-x(0)}" height="${y(30*.45)-y(30*.55)}"><title>the grader's target: 45–55% of seats</title></rect>`; }
+  for(const g of niceTicks(lo,hi,3)){ s+=`<line class="grid" x1="${x(0)}" x2="${x(DAY_END)}" y1="${y(g)}" y2="${y(g)}"/><text x="${x(DAY_END)-2}" y="${y(g)-2}" text-anchor="end">${spec.fmt(g)}</text>`; }
+  if(spec.bounds) for(const b of spec.bounds){ s+=`<line class="bound" x1="${x(0)}" x2="${x(DAY_END)}" y1="${y(b)}" y2="${y(b)}"/>`; }
+  for(const n of D.notes){ if(n.from!=null) s+=`<rect class="note-window" x="${x(n.from)}" y="0" width="${x(n.to)-x(n.from)}" height="${h}"/>`; }
+  if(compare && spec.key==="occupancy"){
+    for(const c of cmpDay){ const cls=CMP_CLASS(c.mode||c.name); const cp=c.occupancy.filter(p=>p[0]<=t).map(p=>({t:p[0],v:p[1]}));
+      if(cp.length) s+=`<path class="cmp-line ${cls}" d="${linePath(cp,x,y)}"/>`;
+      for(const pt of c.push_ts){ s+=`<line class="${cls} cmp-push" x1="${x(pt)}" x2="${x(pt)}" y1="${h-8}" y2="${h}"/>`; } }
+  }
+  if(pts.length){
+    if(spec.fill){ const d=linePath(pts,x,y); s+=`<path class="room-fill" d="${d}L${x(pts[pts.length-1].t)},${y(lo)}L${x(pts[0].t)},${y(lo)}Z"/>`; }
+    s+=`<path class="room-line" d="${linePath(pts,x,y)}"/>`;
+  }
+  s+=fireMarks(spec,h,t);
+  svg.innerHTML=s;
+  const r=readingAt(t); document.getElementById(`now-${i}`).textContent = r&&r[spec.key]!=null ? spec.fmt(r[spec.key]) : "";
+}
+
+// ---- right column ----
+function diffHtml(b, prev){ const d=diffOf(b,prev); return d.length?`<div class="diff">${d.map(x=>`<span><s>${fmtSet[x.key](x.was)}</s> → <b>${fmtSet[x.key](x.now)}</b></span>`).join("")}</div>`:""; }
+function renderInForce(t){
+  const {plan, prev, latest} = planAt(t); const b = blockAt(plan,t); if(!b){ document.getElementById("inforce").innerHTML=""; return; }
+  const st=b.settings||{}; const cls=blockClass(b,latest); const o=b.origin||{};
+  const who = o.by==="daily"||!o.by ? "written by the morning plan" : o.by==="rule" ? "set by rule, no model" : `changed by the ${o.by} push at ${clock(o.at)}`;
+  const wasBlock = cls==="fresh" ? blockAt(prev, b.from) : null;
+  const cell=(k,v,unit)=>{ const w=wasBlock&&+wasBlock.settings[k]!==+v; const was=w?fmtSet[k](wasBlock.settings[k]):""; return `<div><span class="v">${v}</span><span class="k">${unit}</span><span class="was">${was}</span></div>`; };
+  document.getElementById("inforce").innerHTML = `
+    <h2>Block in force <span class="mono">${clock(b.from)}–${clock(b.to)} · stretch ${stretchOf(t)}</span></h2>
+    <div class="settings">
+      ${cell("light",Math.round(st.light),"lux")}${cell("temperature",(+st.temperature).toFixed(1),"°C set")}${cell("volume",Math.round(st.volume),"dB")}${cell("fan",st.fan,"fan")}
+    </div>
+    <div class="assume">${b.assumes?`<span>assumes ${esc(b.assumes.weather)}</span><span>${esc(b.assumes.crowd)} room</span>`:""}<span style="${cls==="fresh"?"color:var(--amber)":""}">${who}</span></div>
+    <div class="why">${esc(b.reasons||"")}</div>`;
+}
+function callButtons(calls){
+  if(!calls.length) return "";
+  return `<div class="calls">${calls.map(c=>`<button data-call="${c.id}" class="${openCalls.has(c.id)?"on":""}">${openCalls.has(c.id)?"hide":"show"} the ${esc(c.purpose||c.agent)} prompt</button>`).join("")}</div>`+
+    calls.filter(c=>openCalls.has(c.id)).map(c=>`<div class="calltext">
+      <div class="meta"><span><b>${esc(c.agent)}</b> · ${esc(c.purpose||"")}</span><span>${c.tokens?`${(c.tokens/1000).toFixed(1)}k tokens`:""}${c.latency_s?` · ${c.latency_s}s`:""}${c.usd?` · $${c.usd.toFixed(4)}`:""}</span></div>
+      <div class="who">what the team sent</div><pre>${esc(c.prompt)}</pre>
+      <div class="who">what came back</div><pre class="reply">${esc(c.reply)}</pre></div>`).join("");
+}
+function wireCallButtons(root){ root.querySelectorAll("button[data-call]").forEach(b=>b.addEventListener("click",ev=>{ ev.stopPropagation(); const id=+b.dataset.call; openCalls.has(id)?openCalls.delete(id):openCalls.add(id); renderFeed(T); renderMorning(); })); }
+function renderFeed(t){
+  const feed=document.getElementById("feed");
+  const keepScroll=feed.scrollTop; const tChanged = renderFeed.lastT!==t; renderFeed.lastT=t;
+  const evs=[...D.events].sort((a,b)=>b.t-a.t);
+  const cur = [...D.events].filter(e=>e.t<=t).sort((a,b)=>b.t-a.t)[0];
+  feed.innerHTML = evs.map(e=>{
+    const owner = e.fired.some(f=>f.startsWith("owner says")); const rule = e.mode==="rule" || e.fired.some(f=>/energy mode|after 9pm/i.test(f));
+    const mq=(memByT.get(e.t)||[]); const kept=keptByT.get(e.t); const push=pushByT.get(e.t);
+    const answers = D.mem_answers[String(e.t)]||[];
+    const changed = push ? push.blocks.filter(b=>b.origin&&b.origin.at===e.t) : [];
+    const prev = push ? planBefore(e.t) : null;
+    return `<div class="ev ${e.t>t?"future":""} ${cur&&cur.t===e.t?"current":""}" data-t="${e.t}" tabindex="0">
+      <div class="when">${e.clock}</div>
+      <div>
+        ${e.fired.map(f=>`<div class="fired ${owner?"owner":""} ${rule?"rule":""}">${esc(f)}</div>`).join("")}
+        ${mq.map(q=>{ const a=answers.find(a=>a.question===q); return `<div class="memq">${esc(q)}</div>`+(a?`<div class="mema ${/no evidence yet/i.test(a.answer)?"none":""}">${esc(a.answer)}</div>`:""); }).join("")}
+        <div class="out">
+          ${e.outcome==="pushed"?`<span class="pill pushed">pushed · ${esc(e.mode)}${changed.length?` · ${changed.length} block${changed.length>1?"s":""}`:""}</span>`:e.outcome==="kept"?`<span class="pill kept">${e.mode==="model"?"looked, kept the plan":`kept · ${esc(e.mode||"")}`}</span>`:`<span class="pill">no change</span>`}
+          ${e.held.map(()=>`<span class="pill held">change cap</span>`).join("")}
+        </div>
+        ${changed.map(b=>diffHtml(b,prev)).join("")}
+        ${e.held.map(hh=>`<div class="heldwhy">${esc(hh)}</div>`).join("")}
+        ${e.outcome==="kept"&&kept?`<div class="kept-why">${esc(kept)}</div>`:""}
+        ${callButtons(callsByT.get(e.t)||[])}
+        ${changed.length?`<div class="push-why">${changed.map(b=>`<b class="mono">${clock(b.from)}–${clock(b.to)}</b> ${esc(b.reasons)}`).join("<br>")}</div>`:e.note?`<div class="push-why">${esc(e.note)}</div>`:""}
+      </div></div>`;
+  }).join("");
+  document.getElementById("evcount").textContent = `${D.events.filter(e=>e.t<=t).length} of ${D.events.length}`;
+  const curEl=feed.querySelector(".ev.current"); if(!tChanged){ feed.scrollTop=keepScroll; } else if(curEl && !drag){ const top=curEl.offsetTop-feed.offsetTop; if(top<feed.scrollTop || top+curEl.offsetHeight>feed.scrollTop+feed.clientHeight) feed.scrollTop=Math.max(0, top-8); }
+  wireCallButtons(feed);
+  feed.querySelectorAll(".ev").forEach(el=>{ el.addEventListener("click",ev=>{ if(ev.target.closest(".calltext")) return; setT(+el.dataset.t); }); el.addEventListener("keydown",ev=>{ if(ev.key==="Enter") setT(+el.dataset.t); }); });
+}
+function renderBank(t){
+  const items=[...D.bank].sort((a,b)=>a.t-b.t); const seen=items.filter(q=>q.t<=t).length;
+  document.getElementById("bank").innerHTML = `<h2>Unknowns sent to the analysis team <span class="mono">${seen} of ${items.length}</span></h2>
+    <ul>${items.map(q=>`<li class="${q.t>t?"future":""}"><span class="q">${esc(q.question)}</span><span class="s">${clock(q.t)} · ${esc(q.asked_by)} · ${esc(q.tag||"")}${q.situation?` · ${esc(q.situation)}`:""}</span></li>`).join("")}</ul>`;
+}
+function renderMorning(){
+  const A=D.memory_answers||[];
+  document.getElementById("morning").innerHTML = `<h2>What memory said this morning <span class="mono">${A.filter(a=>a.known).length} known · ${A.filter(a=>!a.known).length} guesses</span></h2>
+    ${A.map(a=>`<div class="ans ${a.known?"":"unknown"}"><span class="q">${esc(a.question)}</span><span class="a">${esc(a.answer)}</span></div>`).join("")}
+    ${callButtons((callsByT.get(0)||[]))}`;
+  wireCallButtons(document.getElementById("morning"));
+}
+const num=(v,d=0)=>v==null?"–":(+v).toFixed(d);
+function renderStats(){
+  const s=D.stats||{}; const hs=s.hidden_score||{};
+  const rows=[{name:ALL.run, me:true, stats:s}, ...cmpDay.map(c=>({name:c.name, stats:c.stats}))];
+  const cmp = rows.length>1 ? `<table class="cmp"><tr><th>run</th><th>walked in</th><th>mean in</th><th>stay</th><th>replans</th><th>cost</th><th>grader</th></tr>${rows.map(r=>`<tr><td class="${r.me?"me":""}">${esc(r.name)}</td><td>${num(r.stats.entered)}</td><td>${num(r.stats.mean_occupancy,1)}</td><td>${num(r.stats.stay_est_min)}</td><td>${num(r.stats.replans)}</td><td>$${num(r.stats.usd,3)}</td><td>${r.stats.hidden_score?num(r.stats.hidden_score.comfort,2):"–"}</td></tr>`).join("")}</table>` : "";
+  document.getElementById("statsbox").innerHTML = `<details ${rows.length>1?"open":""}><summary>Day totals${rows.length>1?" and the other runs":""}</summary>
+    <div class="stats">
+      <div>replans<span class="v">${num(s.replans)}</span></div>
+      <div>model calls<span class="v">${num(s.model_calls)}</span></div>
+      <div>cost<span class="v">$${num(s.usd,3)}</span></div>
+      <div>banked<span class="v">${num(s.questions_banked)}</span></div>
+      <div>walked in<span class="v">${num(s.entered)}</span></div>
+      <div>peak in room<span class="v">${num(s.peak_occupancy)}</span></div>
+      <div>mean stay<span class="v">${s.stay_est_min!=null?num(s.stay_est_min)+" min":"–"}</span></div>
+      <div>CO₂ peak<span class="v">${num(s.co2_peak)}</span></div>
+    </div>
+    ${s.hidden_score?`<div class="hint">Grader (never shown to an agent): comfort ${hs.comfort??"–"} · block ${hs.block??"–"} · stay ${hs.stay??"–"}</div>`:""}
+    ${cmp}</details>`;
+}
+function renderHeader(){
+  const f=D.forecast24||{};
+  document.getElementById("run").textContent = `navigation team · ${ALL.run} · ${D.mode||""} mode${ALL.order.length>1?` · day ${ALL.order.indexOf(D.date)+1} of ${ALL.order.length}`:""}`;
+  document.getElementById("title").textContent = `${D.weekday||""} ${D.date}`;
+  document.getElementById("facts").innerHTML = `<span>forecast <b>${esc(f.forecast_text||"–")}</b> ${f.temperature_low!=null?`<span class="mono">${f.temperature_low}–${f.temperature_high} °C</span>`:""}</span>
+    <span>baseline <b>${esc(D.baseline_source||"–")}</b></span>
+    <span>morning plan <b>${D.morning_blocks.length} blocks</b></span>
+    <span>day <b>${D.pushes.length} pushes</b></span>`;
+  document.getElementById("notes").innerHTML = D.notes.length ? D.notes.map(n=>`<span class="chip note">${esc(n.text)}${n.from!=null?` <span class="mono">${clock(n.from)}–${clock(n.to)}</span>`:""}${n.source?` · ${esc(n.source)}`:""}</span>`).join("") : `<span class="chip">no owner's notes today</span>`;
+}
+function renderDayStrip(){
+  const el=document.getElementById("daystrip"); if(ALL.order.length<2){ el.hidden=true; return; } el.hidden=false;
+  el.innerHTML = ALL.order.map((d,i)=>{ const day=ALL.days[d]; const st=day.stats||{}; return `<button data-d="${d}" class="${d===D.date?"on":""}"><span class="d">${i+1} · ${esc((day.weekday||"").slice(0,3))} ${d.slice(5)}</span><span class="m"><b>${day.pushes.length}</b> pushes · ${num(st.questions_banked)} banked · ${esc(day.baseline_source||"")}</span></button>`; }).join("");
+  el.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>setDay(b.dataset.d)));
+}
+
+// ---- state ----
+let T=0, playing=false, speed=20, timer=null, drag=false, compare=false;
+const speeds=[5,20,60];
+function renderAll(){
+  W = lanesEl.clientWidth;
+  laneDefs.forEach((d,i)=>{ const svg=document.getElementById(`svg-${i}`); const h=svg.clientHeight||d.h; svg.setAttribute("viewBox",`0 0 ${W} ${h}`);
+    if(d.kind==="axis") renderAxis(svg,h); else if(d.kind==="owner") renderOwner(svg,h); else if(d.kind==="plan") renderPlan(svg,h,T); else if(d.kind==="lever") renderLever(svg,h,d.spec,T,i); else renderRoom(svg,h,d.spec,T,i); });
+  document.getElementById("playhead").style.left = x(T)+"px";
+  document.getElementById("clock").textContent = clock(T);
+  document.getElementById("stretch").textContent = `stretch ${stretchOf(T)} · t=${T}`;
+  renderInForce(T); renderFeed(T); renderBank(T);
+}
+function setT(t){ T=Math.max(0,Math.min(DAY_END,Math.round(t))); renderAll(); }
+function setDay(d){ if(!ALL.days[d]) return; stop(); loadDay(d); renderHeader(); renderDayStrip(); renderMorning(); renderStats(); document.getElementById("cmpBtn").hidden = cmpDay.length===0; renderFeed.lastT=-1; setT(0); }
+function tick(){ if(!playing) return; if(T>=DAY_END){ stop(); return; } setT(T+1); if(document.getElementById("pauseAt").checked && eventTs.has(T)) stop(); }
+function start(){ playing=true; document.getElementById("play").textContent="Pause"; timer=setInterval(tick, 1000/speed); }
+function stop(){ playing=false; document.getElementById("play").textContent="Play"; clearInterval(timer); }
+document.getElementById("play").onclick=()=>{ if(playing) stop(); else { if(T>=DAY_END) T=0; start(); } };
+document.getElementById("back").onclick=()=>setT(T-15);
+document.getElementById("fwd").onclick=()=>setT(T+15);
+document.getElementById("speed").onclick=e=>{ speed=speeds[(speeds.indexOf(speed)+1)%speeds.length]; e.target.textContent="×"+speed; if(playing){ stop(); start(); } };
+document.getElementById("bigBtn").onclick=e=>{ document.body.classList.toggle("big"); e.target.classList.toggle("on"); renderAll(); };
+document.getElementById("cmpBtn").onclick=e=>{ compare=!compare; e.target.classList.toggle("on",compare); renderAll(); };
+document.addEventListener("keydown",e=>{ if(e.target.tagName==="INPUT") return;
+  if(e.key===" "){ e.preventDefault(); document.getElementById("play").click(); }
+  if(e.key==="ArrowLeft") setT(T-(e.shiftKey?60:5)); if(e.key==="ArrowRight") setT(T+(e.shiftKey?60:5));
+  if(e.key==="Home") setT(0); if(e.key==="End") setT(DAY_END);
+  if(e.key==="]"||e.key==="["){ const i=ALL.order.indexOf(D.date)+(e.key==="]"?1:-1); if(ALL.order[i]) setDay(ALL.order[i]); }
+  if(e.key==="n"||e.key==="N"){ const nx=[...eventTs].filter(t=>t>T).sort((a,b)=>a-b)[0]; if(nx!=null) setT(nx); }
+  if(e.key==="p"||e.key==="P"){ const pv=[...eventTs].filter(t=>t<T).sort((a,b)=>b-a)[0]; if(pv!=null) setT(pv); } });
+const hit=document.getElementById("hit");
+const tFromEvent = e => { const r=lanesEl.getBoundingClientRect(); return ((e.clientX - r.left - L)/(W-L-PADR))*DAY_END; };
+hit.addEventListener("pointerdown",e=>{ drag=true; hit.setPointerCapture(e.pointerId); stop(); setT(tFromEvent(e)); });
+hit.addEventListener("pointermove",e=>{ if(drag) setT(tFromEvent(e)); });
+hit.addEventListener("pointerup",()=>{ drag=false; });
+new ResizeObserver(()=>renderAll()).observe(lanesEl);
+
+// open at #t=450 to start mid-afternoon, &open=1 to open that minute's prompts, #d=YYYY-MM-DD to pick the day
+const hash=location.hash; const hd=hash.match(/d=(\d{4}-\d\d-\d\d)/); const ht=hash.match(/t=(\d+)/);
+loadDay(hd&&ALL.days[hd[1]]?hd[1]:ALL.order[0]);
+renderHeader(); renderDayStrip(); renderMorning(); renderStats(); document.getElementById("cmpBtn").hidden = cmpDay.length===0;
+const t0=ht?+ht[1]:0; if(/open=1/.test(hash)){ for(const c of (callsByT.get(t0)||[])) openCalls.add(c.id); }
+setT(t0);
+</script>
+</body>
+</html>

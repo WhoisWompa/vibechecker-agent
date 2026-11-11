@@ -1,0 +1,260 @@
+<title>Intraday With Experiments</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#EEF1EE; --surface:#FFFFFF; --surface-2:#E3E8E4;
+  --ink:#1B1F1D; --ink-2:#4E5A54; --ink-3:#7F8B85;
+  --rule:#D3D9D5; --rule-strong:#B4BDB8;
+  --accent:#1F5E45; --accent-wash:#E1EEE7; --accent-ink:#164A36;
+  --amber:#B8811A; --amber-wash:#F6EBD2;
+  --alert:#A8402F;
+  --measure:66ch;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#111614; --surface:#181E1B; --surface-2:#212926;
+    --ink:#E7ECE8; --ink-2:#AAB5AF; --ink-3:#7C8781;
+    --rule:#2A332E; --rule-strong:#3D4842;
+    --accent:#6FC49A; --accent-wash:#16261E; --accent-ink:#8ED6B0;
+    --amber:#E4B24A; --amber-wash:#2C2413; --alert:#E5806E;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#111614; --surface:#181E1B; --surface-2:#212926;
+  --ink:#E7ECE8; --ink-2:#AAB5AF; --ink-3:#7C8781;
+  --rule:#2A332E; --rule-strong:#3D4842;
+  --accent:#6FC49A; --accent-wash:#16261E; --accent-ink:#8ED6B0;
+  --amber:#E4B24A; --amber-wash:#2C2413; --alert:#E5806E;
+}
+*{box-sizing:border-box}
+body{background:var(--ground); color:var(--ink); font-family:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif; font-size:16px; line-height:1.6; padding:0 20px 96px; -webkit-font-smoothing:antialiased}
+.wrap{max-width:880px; margin:0 auto}
+h1,h2,h3{font-family:Fraunces,Georgia,serif; font-weight:600; margin:0; text-wrap:balance; letter-spacing:-.01em}
+h1{font-size:2.3rem; line-height:1.1; margin-top:56px}
+h2{font-size:1.5rem; line-height:1.2}
+h3{font-size:1.05rem}
+p{margin:0; max-width:var(--measure)}
+.lede{font-size:1.1rem; color:var(--ink-2); margin-top:14px; max-width:60ch}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3)}
+.mono{font-family:"IBM Plex Mono",monospace; font-size:.85em}
+section{margin-top:56px}
+.head{display:flex; align-items:baseline; gap:14px; padding-bottom:10px; border-bottom:2px solid var(--ink); margin-bottom:20px}
+.stack{display:flex; flex-direction:column; gap:16px}
+.two{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+@media (max-width:700px){.two{grid-template-columns:1fr}}
+.panel{background:var(--surface); border:1px solid var(--rule); padding:16px 18px; display:flex; flex-direction:column; gap:10px}
+.panel .eyebrow{color:var(--accent-ink)}
+.panel.amber .eyebrow{color:var(--amber)}
+figure{margin:0; background:var(--surface); border:1px solid var(--rule); padding:14px 16px 10px}
+figure svg{max-width:100%; height:auto; display:block; color:var(--ink)}
+figcaption{font-size:.85rem; color:var(--ink-2); margin-top:8px}
+ul{margin:0; padding-left:18px; color:var(--ink-2)}
+li{margin:4px 0}
+li b, p b{color:var(--ink); font-weight:600}
+.scroll{overflow-x:auto; border:1px solid var(--rule); background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:620px; font-size:.92rem}
+th{text-align:left; font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:500; padding:10px 14px; border-bottom:1px solid var(--rule-strong)}
+td{padding:10px 14px; border-bottom:1px solid var(--rule); vertical-align:top; color:var(--ink-2); line-height:1.45}
+td:first-child{color:var(--ink); white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+.num{font-variant-numeric:tabular-nums}
+.verdict{display:grid; grid-template-columns:110px 1fr; gap:6px 16px; font-size:.95rem}
+.verdict .k{font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--accent-ink); padding-top:3px}
+.verdict .k.no{color:var(--alert)} .verdict .k.un{color:var(--ink-3)}
+.callout{background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent); padding:14px 18px}
+.callout.amber{border-left-color:var(--amber)}
+</style>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">For Ashley · comparison only, nothing changed in the code</div>
+  <h1>The intraday agent with Draft 2's experiments inside it</h1>
+  <p class="lede">What the Draft 3 intraday agent would look like if it also ran Draft 2's small, reversible experiments during the day. Two diagrams, the mechanism in plain words, what it would add to the story, what it would cost, and when it would be worth doing.</p>
+</header>
+
+<section>
+  <div class="head"><h2>The mechanism, in plain words</h2></div>
+  <div class="stack">
+    <p>Holding a plan precisely is only worth something if the plan is right, and on day one nobody knows. So when the room is calm enough to change and busy enough to measure, the agent tries <b>one small nudge on one lever</b>, a step a guest would not notice, ramped in as usual, and watches the one thing the room cannot hide: <b>how fast people leave</b>.</p>
+    <div class="two">
+      <div class="panel">
+        <span class="eyebrow">The numbers Draft 2 used</span>
+        <ul>
+          <li><b>Step size:</b> 60 lux, 0.5 °C or 3 dB. One lever at a time.</li>
+          <li><b>Settle 10 min</b> for the ramp to land, then a <b>30 min trial</b> window.</li>
+          <li><b>Measure:</b> departures per occupant-minute in the trial versus the 30 min before.</li>
+          <li><b>Evidence bar:</b> at least 5 people in the room and 120 occupant-minutes in each window, about 12 departures.</li>
+          <li><b>Result:</b> a 20% change in leave rate counts. Smaller is unclear.</li>
+          <li><b>Discipline:</b> one experiment per block, none within 45 min of a block change, never during an owner override.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <span class="eyebrow">The three verdicts</span>
+        <div class="verdict">
+          <span class="k">keep</span><span>Leave rate clearly lower. The nudge stays for the rest of the block and carries into the next one. That direction is worth another step later.</span>
+          <span class="k no">revert</span><span>Leave rate clearly higher. Undo it. That direction is marked bad for today.</span>
+          <span class="k un">unclear</span><span>Too few people or no clear difference. Undo it, remember nothing.</span>
+        </div>
+        <p style="font-size:.9rem;color:var(--ink-2)">Verdicts accumulate as a score per direction, plus one for each keep, minus one for each revert, from today and from past days. The next nudge picks the best-scoring untried direction. A kept nudge is re-tested the next time that direction comes up, which is the protection against a lucky half hour.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="head"><h2>Where it plugs in</h2></div>
+  <div class="two">
+    <figure>
+      <svg viewBox="0 0 420 330" role="img" aria-label="Today's intraday graph: observe, detect, then either hold or ask memory, replan and push.">
+        <defs><marker id="a1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+        <g font-family="IBM Plex Sans,Helvetica Neue,Arial,sans-serif" font-size="12" fill="currentColor">
+          <text x="210" y="18" text-anchor="middle" font-size="11" font-weight="600" letter-spacing="1">TODAY · every 15 minutes</text>
+          <rect x="140" y="34" width="140" height="40" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1.2"/>
+          <text x="210" y="54" text-anchor="middle" font-weight="600">observe</text><text x="210" y="68" text-anchor="middle" font-size="10" opacity=".7">last 15 min, plain code</text>
+          <line x1="210" y1="74" x2="210" y2="96" stroke="currentColor" stroke-width="1.2" marker-end="url(#a1)"/>
+          <rect x="140" y="98" width="140" height="40" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1.2"/>
+          <text x="210" y="118" text-anchor="middle" font-weight="600">detect</text><text x="210" y="132" text-anchor="middle" font-size="10" opacity=".7">plan's assumes vs the room</text>
+          <path d="M140,118 H80 V166" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#a1)"/>
+          <text x="76" y="150" font-size="10" opacity=".7" text-anchor="end">nothing</text>
+          <path d="M280,118 H340 V166" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#a1)"/>
+          <text x="346" y="150" font-size="10" opacity=".7">discrepancy</text>
+          <rect x="30" y="168" width="100" height="36" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1.2"/>
+          <text x="80" y="190" text-anchor="middle" font-weight="600">hold</text>
+          <rect x="290" y="168" width="110" height="36" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1.2"/>
+          <text x="345" y="190" text-anchor="middle" font-weight="600">ask memory</text>
+          <line x1="345" y1="204" x2="345" y2="226" stroke="currentColor" stroke-width="1.2" marker-end="url(#a1)"/>
+          <rect x="290" y="228" width="110" height="40" rx="3" fill="#2E8B63" fill-opacity=".12" stroke="#2E8B63" stroke-width="1.6"/>
+          <text x="345" y="248" text-anchor="middle" font-weight="600">replan</text><text x="345" y="262" text-anchor="middle" font-size="10" opacity=".8">the one model call</text>
+          <line x1="345" y1="268" x2="345" y2="290" stroke="currentColor" stroke-width="1.2" marker-end="url(#a1)"/>
+          <rect x="290" y="292" width="110" height="30" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1.2"/>
+          <text x="345" y="311" text-anchor="middle" font-weight="600">push</text>
+        </g>
+      </svg>
+      <figcaption>Today. Judgement only on a discrepancy. Between discrepancies the plan runs as written.</figcaption>
+    </figure>
+    <figure>
+      <svg viewBox="0 0 420 330" role="img" aria-label="With experiments: observe, then judge a running trial, then detect; a calm busy room starts a nudge; a discrepancy still goes to memory and replan; both push.">
+        <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker><marker id="a2b" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L8,4 L0,8 z" fill="#B8811A"/></marker></defs>
+        <g font-family="IBM Plex Sans,Helvetica Neue,Arial,sans-serif" font-size="12" fill="currentColor">
+          <text x="210" y="18" text-anchor="middle" font-size="11" font-weight="600" letter-spacing="1">WITH EXPERIMENTS · every 15 minutes</text>
+          <rect x="140" y="30" width="140" height="34" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1.2"/>
+          <text x="210" y="51" text-anchor="middle" font-weight="600">observe</text>
+          <line x1="210" y1="64" x2="210" y2="80" stroke="currentColor" stroke-width="1.2" marker-end="url(#a2)"/>
+          <rect x="140" y="82" width="140" height="40" rx="3" fill="#B8811A" fill-opacity=".12" stroke="#B8811A" stroke-width="1.6"/>
+          <text x="210" y="100" text-anchor="middle" font-weight="600">judge the trial</text><text x="210" y="114" text-anchor="middle" font-size="10" opacity=".8">keep · revert · unclear</text>
+          <line x1="210" y1="122" x2="210" y2="138" stroke="currentColor" stroke-width="1.2" marker-end="url(#a2)"/>
+          <rect x="140" y="140" width="140" height="34" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1.2"/>
+          <text x="210" y="161" text-anchor="middle" font-weight="600">detect</text>
+          <path d="M140,157 H80 V196" fill="none" stroke="#B8811A" stroke-width="1.6" marker-end="url(#a2b)"/>
+          <text x="76" y="184" font-size="10" text-anchor="end" fill="#B8811A" font-weight="600">calm and busy</text>
+          <path d="M280,157 H340 V196" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#a2)"/>
+          <text x="346" y="184" font-size="10" opacity=".7">discrepancy</text>
+          <rect x="20" y="198" width="120" height="40" rx="3" fill="#B8811A" fill-opacity=".12" stroke="#B8811A" stroke-width="1.6"/>
+          <text x="80" y="216" text-anchor="middle" font-weight="600">explore</text><text x="80" y="230" text-anchor="middle" font-size="10" opacity=".8">one nudge, plain code</text>
+          <rect x="290" y="198" width="110" height="34" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1.2"/>
+          <text x="345" y="219" text-anchor="middle" font-weight="600">ask memory</text>
+          <line x1="345" y1="232" x2="345" y2="246" stroke="currentColor" stroke-width="1.2" marker-end="url(#a2)"/>
+          <rect x="290" y="248" width="110" height="34" rx="3" fill="#2E8B63" fill-opacity=".12" stroke="#2E8B63" stroke-width="1.6"/>
+          <text x="345" y="269" text-anchor="middle" font-weight="600">replan (model)</text>
+          <path d="M80,238 V306 H198" fill="none" stroke="#B8811A" stroke-width="1.6" marker-end="url(#a2b)"/>
+          <path d="M345,282 V306 H222" fill="none" stroke="currentColor" stroke-width="1.2" marker-end="url(#a2)"/>
+          <rect x="160" y="292" width="100" height="30" rx="3" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="1.2"/>
+          <text x="210" y="311" text-anchor="middle" font-weight="600">push</text>
+          <text x="210" y="240" text-anchor="middle" font-size="10" opacity=".7">a discrepancy aborts</text>
+          <text x="210" y="252" text-anchor="middle" font-size="10" opacity=".7">any running trial</text>
+        </g>
+      </svg>
+      <figcaption>With experiments. Two amber boxes added, both plain code, no model calls. The model path is unchanged.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="head"><h2>One day, side by side</h2></div>
+  <figure>
+    <svg viewBox="0 0 900 250" role="img" aria-label="Timeline of a demo day in both versions: the plan blocks, a discrepancy at 15:30 in both, and in the experiment version two nudges at 10:00 and 13:15 with verdicts keep and revert.">
+      <g font-family="IBM Plex Sans,Helvetica Neue,Arial,sans-serif" font-size="11" fill="currentColor">
+        <line x1="80" y1="40" x2="860" y2="40" stroke="currentColor" opacity=".4"/>
+        <line x1="80" y1="150" x2="860" y2="150" stroke="currentColor" opacity=".4"/>
+        <text x="72" y="44" text-anchor="end" font-weight="600">today</text>
+        <text x="72" y="154" text-anchor="end" font-weight="600">with</text><text x="72" y="167" text-anchor="end" font-weight="600">experiments</text>
+        <text x="80" y="30" font-size="10" opacity=".7">08:00</text><text x="303" y="30" font-size="10" opacity=".7" text-anchor="middle">12:00</text><text x="526" y="30" font-size="10" opacity=".7" text-anchor="middle">16:00</text><text x="860" y="30" font-size="10" opacity=".7" text-anchor="end">22:00</text>
+        <rect x="80" y="52" width="780" height="10" fill="currentColor" fill-opacity=".08"/>
+        <rect x="80" y="162" width="780" height="10" fill="currentColor" fill-opacity=".08"/>
+        <line x1="498" y1="36" x2="498" y2="80" stroke="#2E8B63" stroke-width="1.8"/>
+        <text x="504" y="80" fill="#2E8B63" font-weight="600">15:30 rain in the 2h forecast</text>
+        <text x="504" y="93" opacity=".8">memory asked, model rewrites the afternoon</text>
+        <line x1="498" y1="146" x2="498" y2="190" stroke="#2E8B63" stroke-width="1.8"/>
+        <text x="504" y="190" fill="#2E8B63" font-weight="600">15:30 rain, same as today</text>
+        <text x="504" y="203" opacity=".8">any trial in progress is aborted first</text>
+        <rect x="191" y="160" width="46" height="14" fill="#B8811A" fill-opacity=".35" stroke="#B8811A"/>
+        <text x="191" y="192" fill="#B8811A" font-weight="600">10:00 light −60 lux</text>
+        <text x="191" y="205" opacity=".8">trial 10:10–10:40, leave rate 0.041 → 0.031: keep</text>
+        <rect x="372" y="160" width="46" height="14" fill="#B8811A" fill-opacity=".35" stroke="#B8811A"/>
+        <text x="372" y="222" fill="#B8811A" font-weight="600">13:15 volume −3 dB</text>
+        <text x="372" y="235" opacity=".8">13:25–13:55, 0.038 → 0.049: revert</text>
+        <rect x="737" y="160" width="46" height="14" fill="#B8811A" fill-opacity=".35" stroke="#B8811A"/>
+        <text x="783" y="192" fill="#B8811A" font-weight="600" text-anchor="end">19:45 temp −0.5 °C</text>
+        <text x="783" y="205" opacity=".8" text-anchor="end">19:55–20:25, 4 people: unclear, undone</text>
+      </g>
+    </svg>
+    <figcaption>Same Friday, same plan, same 15:30 rain rewrite. The experiment version adds three quiet half-hours of trying something, and ends the day knowing that dimmer light kept people longer and quieter music did not. Numbers are illustrative.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="head"><h2>What it would add to the Draft 3 story</h2></div>
+  <div class="stack">
+    <div class="two">
+      <div class="panel">
+        <span class="eyebrow">Learning inside the day</span>
+        <p>Today the navigation team learns nothing until the analysis team runs after close. With experiments, by dinner the agent already knows one thing about this room from this room, with a number behind it. That is the "adapt" verb happening on camera, without waiting a night.</p>
+      </div>
+      <div class="panel">
+        <span class="eyebrow">Evidence for the analysis team</span>
+        <p>Every experiment is a small before-and-after on one lever with two leave rates and a verdict. Written into the master record with <span class="mono">set_by = experiment</span>, they are exactly the empirical evidence Lionel's chains need. A kept nudge could even enter the question bank as a ready-made hypothesis: "dimmer light keeps people longer here", with three trials attached.</p>
+      </div>
+      <div class="panel">
+        <span class="eyebrow">A better baseline tomorrow</span>
+        <p>Kept nudges seed the next morning's offsets, so the baseline tool stops being a median of habit and starts being a median of what worked. Right now the baseline can only reproduce yesterday.</p>
+      </div>
+      <div class="panel">
+        <span class="eyebrow">Fits the sketch</span>
+        <p>Nothing in Lionel's whiteboard forbids it. The navigation team still owns "what should the room be right now"; it just gets a second, faster source of answers next to memory. The memory agent and question bank stay the only bridge to the analysis team.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="head"><h2>What it would cost, and what could go wrong</h2></div>
+  <div class="scroll"><table>
+    <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Model calls</td><td>None. Explore and judge are plain code, the same as Draft 2. Cost per day stays at about 3 cents.</td></tr>
+      <tr><td>Code</td><td>Port <span class="mono">explore.py</span> (180 lines) and the leave-rate judge from Draft 2 into <span class="mono">intraday_agent.py</span> as two graph nodes, one push reason, one master-record value. About 2 to 3 hours with tests.</td></tr>
+      <tr><td>Noise</td><td>A 30-minute window holds about 10 departures, so single verdicts are noisy. Draft 2's protection: re-test kept nudges, and require the evidence bar. Still the weakest part; say so if it goes in the deck.</td></tr>
+      <tr><td>Interference</td><td>An experiment and a discrepancy rewrite must never overlap: a discrepancy aborts the trial and marks it unclear. Otherwise the leave rate would be judging the rain, not the nudge.</td></tr>
+      <tr><td>Owner overrides</td><td>Never experiment inside an override window. Already easy: the block carries the owner's reason.</td></tr>
+      <tr><td>The simulation</td><td>Dead on arrival until the room fills. With 2 of 30 seats the evidence bar is never met and no experiment ever starts. This is the same blocker as the eval numbers.</td></tr>
+      <tr><td>Token tracking</td><td>Unchanged. Experiments add rows to the master record and pushes, not to the tokens file.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="head"><h2>When it would be worth doing</h2></div>
+  <div class="stack">
+    <div class="callout amber">
+      <span class="eyebrow">Not before the demo</span>
+      <p>It adds a third kind of push to record and explain, and its verdicts are only visible on a room that fills. Sunday's time is better spent on the simulation preset and one real verdict from the analysis team.</p>
+    </div>
+    <div class="callout">
+      <span class="eyebrow">After the demo, if the simulation is fixed</span>
+      <p>It is the cheapest path to visible in-day learning, it costs no tokens, and it hands the analysis team pre-run experiments instead of open questions. If the team wants the agent to "get better at it over days" to be true of the navigation team too, this is how.</p>
+    </div>
+    <p style="color:var(--ink-2);font-size:.92rem">Draft 2 source: <span class="mono">3. Drafts/Draft 2/Intra Day Team/intraday/explore.py</span> and <span class="mono">critic.py</span>. Nothing in Draft 3 has been changed for this page.</p>
+  </div>
+</section>
+
+</div>

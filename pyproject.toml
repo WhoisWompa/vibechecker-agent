@@ -1,0 +1,29 @@
+[project]
+name = "vibechecker"
+version = "0.1.0"
+description = "Vibechecker: navigation team + analysis team over Lionel's cafe simulation."
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.2,<3",
+    "pydantic>=2.7",
+    "python-dotenv>=1.0",
+    "langchain>=1.0",
+    "langchain-core>=1.0",
+    "langchain-anthropic>=1.0",
+    "langgraph>=1.0",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+memory = ["sentence-transformers>=3.0", "scikit-learn>=1.4"]
+bedrock = ["langchain-aws>=1.0", "boto3>=1.34"]
+calendar = ["langchain-mcp-adapters>=0.3"]
+
+[tool.pytest.ini_options]
+testpaths = ["agent/Agent_architecture/navigation_team/tests"]
+pythonpath = ["."]
+markers = ["slow: drives the real cafe for a day"]
+
+[tool.setuptools]
+py-modules = []

@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Research run — live view</title>
+<style>
+  body { background: #14161a; color: #d8dbe0; font-family: Consolas, "Courier New", monospace; margin: 0; }
+  #header { position: sticky; top: 0; background: #191c22; border-bottom: 1px solid #2c313a;
+            padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; z-index: 5; }
+  #header h1 { font-size: 1rem; color: #8ab4f8; margin: 0; }
+  button { font-family: inherit; font-size: 0.8rem; padding: 0.15rem 0.8rem;
+           background: #2c313a; color: #d8dbe0; border: 1px solid #3b5b8f; border-radius: 4px; cursor: pointer; }
+  button:disabled { cursor: default; color: #6b7280; border-color: #2c313a; }
+  #stopBtn { border-color: #8f3b3b; }
+  .viewbtn.selected { background: #26314a; color: #8ab4f8; }
+  .dim { font-size: 0.7rem; color: #6b7280; }
+  #nav { padding: 0.4rem 1rem 0; }
+  .chiprow { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.35rem; }
+  .chip { font-size: 0.7rem; padding: 0.1rem 0.5rem; border: 1px solid #2c313a; border-radius: 10px;
+          background: #1e222a; color: #9aa3b0; cursor: pointer; white-space: nowrap; user-select: none; }
+  .chip.selected { border-color: #8ab4f8; color: #8ab4f8; }
+  .chip.active { background: #26301f; color: #9fd0a5; }
+  #main { display: flex; align-items: flex-start; min-width: 0; }
+  #menu { flex: 0 0 240px; width: 240px; box-sizing: border-box; padding: 0.6rem 0.8rem;
+          border-right: 1px solid #2c313a; position: sticky; top: 3rem; }
+  #menu h2 { font-size: 0.75rem; color: #6b7280; margin: 0 0 0.5rem; text-transform: uppercase; }
+  .qitem { display: flex; gap: 0.5rem; align-items: flex-start; justify-content: space-between;
+           font-size: 0.75rem; padding: 0.35rem 0; border-bottom: 1px solid #1e222a; }
+  .qitem .qtext { word-break: break-word; }
+  #startBtn { display: block; width: 100%; margin: 0 0 0.5rem; }
+  .hitem { display: flex; gap: 0.5rem; align-items: flex-start;
+           font-size: 0.75rem; padding: 0.35rem 0; border-bottom: 1px solid #1e222a; }
+  .hitem .qtext { word-break: break-word; }
+  .qmark { flex: 0 0 auto; }
+  .qmark.m-pending { color: #565c66; }
+  .qmark.m-active { color: #8ab4f8; animation: pulse 1.2s ease-in-out infinite; }
+  .qmark.m-green { color: #9fd0a5; }
+  .qmark.m-red { color: #e8896b; }
+  .qmark.m-yellow { color: #e8c96b; }
+  .hitem.qflash { animation: rowflash 1s ease-out; }
+  @keyframes rowflash { from { background: var(--flash, #26314a); } to { background: transparent; } }
+  #content { flex: 1 1 auto; min-width: 0; }
+  #log { padding: 0.6rem 1rem 2rem; font-size: 0.8rem; }
+  #log pre { white-space: pre-wrap; word-break: break-word; margin: 0 0 0.6rem 1.2rem; font: inherit; }
+  .in-prefix { color: #8ab4f8; }
+  .out-prefix { color: #9fd0a5; }
+  .conv-name { color: #6b7280; }
+  .note pre { color: #e8c96b; opacity: 0.85; }
+  .divider { color: #565c66; margin: 0.6rem 0; }
+  .tok { color: #6b7280; font-size: 0.7rem; }
+
+  /* summary view */
+  #summary { padding: 0.6rem 1rem 2rem; font-size: 0.8rem; }
+  .hypsec { border: 1px solid #2c313a; border-radius: 6px; margin: 0 0 1rem; padding: 0.7rem 0.9rem; }
+  .hypsec h3 { margin: 0 0 0.6rem; font-size: 0.9rem; color: #8ab4f8; word-break: break-word; }
+  .graphwrap { overflow-x: auto; border: 1px solid #22262e; border-radius: 4px;
+               background: #101216; margin-bottom: 0.6rem; }
+  .graphbox { position: relative; }
+  .gnode { position: absolute; box-sizing: border-box; width: 170px; height: 62px;
+           background: #1b1f27; border: 1px solid #333a46; border-radius: 4px;
+           padding: 0.2rem 0.35rem; font-size: 0.68rem; overflow: hidden; }
+  .gnode .stmt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+                 overflow: hidden; word-break: break-word; }
+  .gnode.gnew { border-color: #8ab4f8; box-shadow: 0 0 6px rgba(138,180,248,0.5); }
+  .gnode.gkind { border-color: #c79bf0; }
+  .ktag { font-size: 0.6rem; }
+  .chgtag { font-size: 0.6rem; color: #8ab4f8; }
+  .vnote { font-size: 0.7rem; color: #e8c96b; opacity: 0.85; margin-bottom: 0.3rem; word-break: break-word; }
+  .removedline { font-size: 0.7rem; color: #6b7280; margin: -0.3rem 0 0.6rem; word-break: break-word; }
+  .k-fact { color: #8ab4f8; }
+  .k-empirical { color: #9fd0a5; }
+  .k-inference { color: #c79bf0; }
+  .k-unclear { color: #e8896b; }
+  .gsvg { position: absolute; left: 0; top: 0; pointer-events: none; }
+  .keylines { color: #e8c96b; opacity: 0.85; margin-bottom: 0.4rem; }
+  .keylines div { margin: 0.1rem 0; }
+  .result { margin-top: 0.3rem; }
+  .verdict { font-weight: bold; padding: 0.05rem 0.5rem; border-radius: 4px; margin-right: 0.5rem; }
+  .v-green { background: #1d3323; color: #9fd0a5; }
+  .v-red { background: #3a1f1f; color: #e8896b; }
+  .v-yellow { background: #383219; color: #e8c96b; }
+  .stagewrap { overflow-x: auto; border: 1px solid #22262e; border-radius: 4px;
+               background: #101216; margin-bottom: 0.6rem; }
+  .stagetbl { border-collapse: collapse; font-size: 0.68rem; white-space: nowrap; }
+  .stagetbl th, .stagetbl td { padding: 0.15rem 0.5rem; border-bottom: 1px solid #22262e;
+                               text-align: left; vertical-align: top; }
+  .stagetbl th { color: #6b7280; text-transform: uppercase; font-size: 0.6rem; }
+  .stagetbl td.qcell { white-space: normal; max-width: 260px; word-break: break-word; }
+  .d-new { color: #9fd0a5; }
+  .d-same { color: #e8c96b; }
+  .d-opp { color: #e8896b; }
+  .membox { border: 1px solid #2e4a34; background: #16211a; border-radius: 6px;
+            padding: 0.5rem 0.7rem; margin-top: 0.5rem; }
+  .membox .memtitle { color: #9fd0a5; font-weight: bold; margin-bottom: 0.3rem; }
+  .membox .derivedline { color: #e8c96b; font-size: 0.7rem; margin-top: 0.2rem; }
+  .memupd { border-left: 3px solid #2e4a34; padding-left: 0.5rem; margin: 0.3rem 0; font-size: 0.75rem; }
+  .memupd .detail { color: #6b7280; font-size: 0.7rem; word-break: break-word; }
+  .discardbox { border: 1px solid #5a2c2c; background: #241717; border-radius: 6px;
+                padding: 0.5rem 0.7rem; margin-top: 0.5rem; color: #e8896b; font-weight: bold; }
+  #activityLine { color: #8ab4f8; margin: 0.4rem 0 0; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  /* demo view */
+  #demo { padding: 0.6rem 1rem 2rem; font-size: 0.8rem; }
+  .scorestrip { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 0.5rem 0.7rem;
+                border: 1px solid #2c313a; border-radius: 6px; margin-bottom: 0.8rem; }
+  .scorestrip .num { font-weight: bold; }
+  .n-blue { color: #8ab4f8; }
+  .n-green { color: #9fd0a5; }
+  .n-red { color: #e8896b; }
+  .n-yellow { color: #e8c96b; }
+  .teamrow { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.8rem; }
+  .tcard { flex: 1 1 160px; min-width: 160px; box-sizing: border-box; border: 1px solid #2c313a;
+           border-radius: 6px; background: #1b1f27; padding: 0.5rem 0.7rem; }
+  .tcard .tname { font-weight: bold; margin-bottom: 0.25rem; }
+  .tcard .tcap { font-size: 0.72rem; color: #6b7280; }
+  .tcard.active { border-color: #8ab4f8; box-shadow: 0 0 6px rgba(138,180,248,0.5); }
+  .tcard.active .tcap { color: #8ab4f8; }
+  .tcard .thyp { font-size: 0.65rem; color: #6b7280; margin-top: 0.3rem; word-break: break-word; }
+  .stagerows { border: 1px solid #2c313a; border-radius: 6px; padding: 0.5rem 0.7rem; margin-bottom: 0.8rem; }
+  .srow { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+          padding: 0.25rem 0; border-bottom: 1px solid #1e222a; }
+  .srow:last-child { border-bottom: none; }
+  .srow .shyp { flex: 0 1 340px; min-width: 200px; word-break: break-word; font-size: 0.75rem; }
+  .pill { font-size: 0.68rem; padding: 0.08rem 0.5rem; border-radius: 10px;
+          border: 1px solid #2c313a; color: #565c66; background: #1e222a; white-space: nowrap; }
+  .pill.reached { color: #d8dbe0; border-color: #3b5b8f; background: #26314a; }
+  .pill.current { animation: pulse 1.2s ease-in-out infinite; }
+  .pill.p-green { background: #1d3323; color: #9fd0a5; border-color: #2e4a34; }
+  .pill.p-red { background: #3a1f1f; color: #e8896b; border-color: #5a2c2c; }
+  .pill.p-yellow { background: #383219; color: #e8c96b; border-color: #5a512c; }
+  .parrow { color: #565c66; font-size: 0.65rem; }
+  .feed { border: 1px solid #2c313a; border-radius: 6px; padding: 0.5rem 0.7rem; }
+  .fline { padding: 0.15rem 0; word-break: break-word; }
+  .fts { color: #565c66; font-size: 0.68rem; margin-right: 0.5rem; }
+  .fhyp { color: #6b7280; font-size: 0.68rem; margin-right: 0.5rem; }
+  .payoff { border: 1px solid #3b5b8f; border-radius: 6px; background: #1b1f27;
+            padding: 0.5rem 0.7rem; margin: 0.4rem 0; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>Research run — live view</h1>
+  <button id="demoBtn" class="viewbtn selected" onclick="setView('demo')">Demo</button>
+  <button id="summaryBtn" class="viewbtn" onclick="setView('summary')">Summary</button>
+  <button id="chatBtn" class="viewbtn" onclick="setView('chat')">Chat</button>
+  <button id="stopBtn" onclick="stopRun()" disabled>Stop</button>
+  <button id="clearBtn" onclick="clearView()">Clear</button>
+  <button id="clearAllBtn" onclick="clearAll()">Clear all</button>
+  <span id="tokens" class="dim"></span>
+  <span id="status" class="dim">waiting…</span>
+</div>
+<div id="main">
+  <div id="menu">
+    <h2 id="menuTitle">Questions</h2>
+    <div id="qlist"></div>
+  </div>
+  <div id="content">
+    <div id="nav" style="display:none">
+      <div id="hypRow" class="chiprow"></div>
+      <div id="convRow" class="chiprow"></div>
+    </div>
+    <div id="demo"></div>
+    <div id="summary" style="display:none"></div>
+    <div id="log" style="display:none"></div>
+  </div>
+</div>
+<script>
+const events = [];          // all events seen so far
+let renderedCount = 0;      // events already appended to #log (live mode)
+let filter = null;          // null = live mode, else {hyp, conv}
+let selectedHyp = undefined; // which hypothesis's conv chips are shown (undefined = none)
+let view = "demo";          // "demo" | "summary" | "chat"
+let totIn = 0, totOut = 0;
+let lastRendered = null;    // last event appended (for dividers in live mode)
+let clearSummaryBefore = 0; // events with index < this are hidden from summary
+let clearChatBefore = 0;    // events with index < this are hidden from chat
+
+function clearView() {
+  if (view === "summary") { clearSummaryBefore = events.length; rebuildSummary(); rebuildNav(); }
+  else { clearChatBefore = events.length; rerender(); }
+}
+function clearAll() {
+  clearSummaryBefore = clearChatBefore = events.length;
+  rebuildSummary();
+  rerender();
+}
+
+const hypLabel = h => h === null ? "run" : h;
+const trunc = s => s.length > 60 ? s.slice(0, 60) + "…" : s;
+
+function setView(v) {
+  view = v;
+  document.getElementById("demoBtn").classList.toggle("selected", v === "demo");
+  document.getElementById("summaryBtn").classList.toggle("selected", v === "summary");
+  document.getElementById("chatBtn").classList.toggle("selected", v === "chat");
+  document.getElementById("demo").style.display = v === "demo" ? "" : "none";
+  document.getElementById("summary").style.display = v === "summary" ? "" : "none";
+  document.getElementById("log").style.display = v === "chat" ? "" : "none";
+  document.getElementById("nav").style.display = v === "demo" ? "none" : "";
+  if (v === "demo") rebuildDemo();
+  else if (v === "summary") rebuildSummary();
+  else rerender();
+  scrollToBottom();
+}
+
+function tryJson(text) {
+  const t = (text || "").trim();
+  if (!(t.startsWith("{") || t.startsWith("["))) return null;
+  try { return JSON.parse(t); } catch (e) { return null; }
+}
+function prettyIfJson(text) {
+  const obj = tryJson(text);
+  return obj === null ? text : JSON.stringify(obj, null, 2);
+}
+
+// prompt text -> last non-System block of the pretty_repr message list
+function lastInput(text) {
+  const parts = text.split(/\n*={4,} (\w[\w ]*?) Message ={4,}\n/);
+  // parts: [pre, role1, body1, role2, body2, ...]
+  for (let i = parts.length - 2; i >= 1; i -= 2) {
+    if (!/^System/i.test(parts[i])) return parts[i + 1].trim();
+  }
+  return text.trim(); // no headers found: show as-is
+}
+
+function renderEvent(ev, withDividers) {
+  const log = document.getElementById("log");
+  if (withDividers && lastRendered &&
+      (lastRendered.hypothesis !== ev.hypothesis || lastRendered.conversation !== ev.conversation)) {
+    const d = document.createElement("div");
+    d.className = "divider";
+    d.textContent = lastRendered.hypothesis !== ev.hypothesis
+      ? "→ moving to hypothesis: " + hypLabel(ev.hypothesis) + " / " + (ev.conversation || "")
+      : "→ moving to " + (ev.conversation || "");
+    log.appendChild(d);
+  }
+  if (withDividers) lastRendered = ev;
+
+  const line = document.createElement("div");
+  line.className = ev.role === "note" ? "note" : "";
+  const head = document.createElement("div");
+  const pre = document.createElement("pre");
+  if (ev.role === "prompt") {
+    head.innerHTML = '<span class="conv-name"></span>  <span class="in-prefix">user:</span>';
+    head.querySelector(".conv-name").textContent = ev.conversation || "";
+    pre.textContent = prettyIfJson(lastInput(ev.text));
+  } else if (ev.role === "reply") {
+    head.innerHTML = '<span class="out-prefix">assistant:</span> <span class="tok"></span>';
+    if (ev.tokens) head.querySelector(".tok").textContent =
+      "· " + (ev.tokens.input || 0) + " in / " + (ev.tokens.output || 0) + " out";
+    pre.textContent = prettyIfJson(ev.text);
+  } else {
+    pre.textContent = prettyIfJson(ev.text);
+  }
+  if (head.childNodes.length) line.appendChild(head);
+  line.appendChild(pre);
+  log.appendChild(line);
+}
+
+// ---- summary view ----------------------------------------------------------
+
+const NODE_W = 170, NODE_H = 62, GAP_X = 24, GAP_Y = 40, PAD = 12;
+
+function buildGraph(dag, diff) {
+  const nodes = dag.nodes || [], edges = dag.edges || [];
+  const ids = nodes.map(n => n.id);
+  const parents = {};
+  ids.forEach(id => parents[id] = []);
+  for (const [p, c] of edges) if (parents[c] && ids.includes(p)) parents[c].push(p);
+
+  // layer = longest path from a root; fixed-point loop handles any input order
+  const layer = {};
+  ids.forEach(id => layer[id] = 0);
+  for (let pass = 0; pass < ids.length + 1; pass++) {
+    let changed = false;
+    for (const id of ids) {
+      for (const p of parents[id]) {
+        if (layer[id] < layer[p] + 1) { layer[id] = layer[p] + 1; changed = true; }
+      }
+    }
+    if (!changed) break;
+  }
+
+  const byLayer = new Map();
+  for (const id of ids) {
+    if (!byLayer.has(layer[id])) byLayer.set(layer[id], []);
+    byLayer.get(layer[id]).push(id);
+  }
+  const pos = {};
+  let maxPerLayer = 0, maxLayer = 0;
+  for (const [ly, list] of byLayer) {
+    maxPerLayer = Math.max(maxPerLayer, list.length);
+    maxLayer = Math.max(maxLayer, ly);
+    list.forEach((id, i) => {
+      pos[id] = { x: PAD + i * (NODE_W + GAP_X), y: PAD + ly * (NODE_H + GAP_Y) };
+    });
+  }
+  const width = PAD * 2 + maxPerLayer * (NODE_W + GAP_X) - GAP_X;
+  const height = PAD * 2 + (maxLayer + 1) * (NODE_H + GAP_Y) - GAP_Y;
+
+  const wrap = document.createElement("div");
+  wrap.className = "graphwrap";
+  const box = document.createElement("div");
+  box.className = "graphbox";
+  box.style.width = width + "px";
+  box.style.height = height + "px";
+  wrap.appendChild(box);
+
+  // edges first (behind the boxes)
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.setAttribute("class", "gsvg");
+  const defs = document.createElementNS(svgNS, "defs");
+  const mid = "arrow" + Math.random().toString(36).slice(2, 8);
+  defs.innerHTML = '<marker id="' + mid + '" viewBox="0 0 10 10" refX="9" refY="5" ' +
+    'markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
+    '<path d="M 0 0 L 10 5 L 0 10 z" fill="#565c66"/></marker>';
+  svg.appendChild(defs);
+  for (const [p, c] of edges) {
+    if (!pos[p] || !pos[c]) continue;
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", pos[p].x + NODE_W / 2);
+    line.setAttribute("y1", pos[p].y + NODE_H);
+    line.setAttribute("x2", pos[c].x + NODE_W / 2);
+    line.setAttribute("y2", pos[c].y - 2);
+    line.setAttribute("stroke", "#565c66");
+    line.setAttribute("stroke-width", "1");
+    line.setAttribute("marker-end", "url(#" + mid + ")");
+    svg.appendChild(line);
+  }
+  box.appendChild(svg);
+
+  for (const n of nodes) {
+    const d = document.createElement("div");
+    d.className = "gnode";
+    let flagged = false;
+    if (diff) {
+      if (diff.newStmts.has(n.statement)) { d.classList.add("gnew"); flagged = true; }
+      else if (diff.kindChanged.has(n.statement)) { d.classList.add("gkind"); flagged = true; }
+    }
+    d.style.left = pos[n.id].x + "px";
+    d.style.top = pos[n.id].y + "px";
+    d.title = n.statement;
+    const stmt = document.createElement("div");
+    stmt.className = "stmt";
+    stmt.textContent = n.statement;
+    const tag = document.createElement("span");
+    tag.className = "ktag k-" + n.kind;
+    tag.textContent = "(" + n.kind + ")";
+    d.appendChild(stmt);
+    d.appendChild(tag);
+    if (flagged) {
+      const chg = document.createElement("span");
+      chg.className = "chgtag";
+      chg.textContent = " (changed)";
+      d.appendChild(chg);
+    }
+    box.appendChild(d);
+  }
+  return wrap;
+}
+
+const KEY_NOTE = /^(gate: pass|gate: fail|gate pass|gate fail|revise bounce|committed as )/;
+
+const DEDUP_CLASS = d => d === "new" ? "d-new" : /^same as /.test(d) ? "d-same" : /^opposite/.test(d) ? "d-opp" : "";
+
+function buildStageTable(rows) {
+  const wrap = document.createElement("div");
+  wrap.className = "stagewrap";
+  const tbl = document.createElement("table");
+  tbl.className = "stagetbl";
+  const thead = document.createElement("tr");
+  for (const h of ["step", "kind", "question", "prediction", "dedup"]) {
+    const th = document.createElement("th");
+    th.textContent = h;
+    thead.appendChild(th);
+  }
+  tbl.appendChild(thead);
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    const cells = [
+      [r.id, "", r.statement],
+      [r.kind, "ktag k-" + r.kind, ""],
+      [r.question, "qcell", ""],
+      [r.prediction, "qcell", ""],
+      [r.dedup, DEDUP_CLASS(r.dedup || ""), ""],
+    ];
+    for (const [text, cls, title] of cells) {
+      const td = document.createElement("td");
+      td.textContent = text || "";
+      if (cls) td.className = cls;
+      if (title) td.title = title;
+      tr.appendChild(td);
+    }
+    tbl.appendChild(tr);
+  }
+  wrap.appendChild(tbl);
+  return wrap;
+}
+
+function buildMemoryBox(o) {
+  const box = document.createElement("div");
+  box.className = "membox";
+  const t = document.createElement("div");
+  t.className = "memtitle";
+  t.textContent = "saved to memory as " + (o.hypothesis_id || "?");
+  box.appendChild(t);
+  const wrap = document.createElement("div");
+  wrap.className = "stagewrap";
+  wrap.style.marginBottom = "0";
+  const tbl = document.createElement("table");
+  tbl.className = "stagetbl";
+  const thead = document.createElement("tr");
+  for (const h of ["node id", "kind", "new/reused", "text"]) {
+    const th = document.createElement("th");
+    th.textContent = h;
+    thead.appendChild(th);
+  }
+  tbl.appendChild(thead);
+  const derivedNotes = [];
+  for (const n of (o.nodes || [])) {
+    const tr = document.createElement("tr");
+    const mk = (text, cls, title) => {
+      const td = document.createElement("td");
+      td.textContent = text;
+      if (cls) td.className = cls;
+      if (title) td.title = title;
+      tr.appendChild(td);
+    };
+    mk(n.id || "", "", "");
+    mk(n.kind || "", "ktag k-" + n.kind, "");
+    mk(n.new ? "new" : "reused", n.new ? "d-new" : "d-same", "");
+    mk(trunc(n.text || ""), "qcell", n.text || "");
+    tbl.appendChild(tr);
+    if (n.derived) derivedNotes.push(n.id + ": " + n.derived);
+  }
+  wrap.appendChild(tbl);
+  box.appendChild(wrap);
+  for (const d of derivedNotes) {
+    const dl = document.createElement("div");
+    dl.className = "derivedline";
+    dl.textContent = d;
+    box.appendChild(dl);
+  }
+  return box;
+}
+
+function buildMemUpdate(o) {
+  const d = document.createElement("div");
+  d.className = "memupd";
+  const line = document.createElement("div");
+  line.appendChild(document.createTextNode("📥 memory updated: " + (o.node || "?") + " (" + (o.kind || "?") + ") — "));
+  const outcome = o.outcome === null || o.outcome === undefined ? "" : String(o.outcome);
+  const colorOf = s => s.endsWith("not supported") ? "v-red"
+    : s.endsWith("supported") ? "v-green"
+    : s.endsWith("inconclusive") ? "v-yellow" : "";
+  const segs = outcome.split("; ");
+  segs.forEach((seg, i) => {
+    const out = document.createElement("span");
+    if (o.kind !== "fact") out.className = colorOf(seg);
+    out.textContent = trunc(seg);
+    out.title = seg;
+    line.appendChild(out);
+    if (i < segs.length - 1) line.appendChild(document.createTextNode("; "));
+  });
+  d.appendChild(line);
+  if (o.detail) {
+    const det = document.createElement("div");
+    det.className = "detail";
+    det.textContent = trunc(o.detail);
+    det.title = o.detail;
+    d.appendChild(det);
+  }
+  return d;
+}
+
+function verdictClassText(v) {
+  if (v === true || v === "supported" || v === "True") return ["v-green", "supported"];
+  if (v === false || v === "not supported" || v === "refuted" || v === "False") return ["v-red", "not supported"];
+  return ["v-yellow", v === null ? "inconclusive" : String(v)];
+}
+
+function sectionIdOf(h) { return "hyp-" + encodeURIComponent(JSON.stringify(h)); }
+
+function rebuildSummary() {
+  const root = document.getElementById("summary");
+  root.innerHTML = "";
+
+  // group events per hypothesis, order of first appearance; null first
+  const order = [];
+  const groups = new Map(); // key -> {hyp, events}
+  for (const ev of events.slice(clearSummaryBefore)) {
+    const k = JSON.stringify(ev.hypothesis);
+    if (!groups.has(k)) { groups.set(k, { hyp: ev.hypothesis, events: [] }); order.push(k); }
+    groups.get(k).events.push(ev);
+  }
+  const nullKey = JSON.stringify(null);
+  const ordered = order.includes(nullKey)
+    ? [nullKey, ...order.filter(k => k !== nullKey)] : order;
+
+  for (const k of ordered) {
+    const g = groups.get(k);
+    const sec = document.createElement("div");
+    sec.className = "hypsec";
+    sec.id = sectionIdOf(g.hyp);
+
+    const h3 = document.createElement("h3");
+    h3.textContent = hypLabel(g.hyp);
+    sec.appendChild(h3);
+
+    if (g.hyp !== null) {
+      // chronological feed: dag versions (each with the revise note that
+      // preceded it) interleaved with stage tables
+      let prevDag = null, dagCount = 0, pendingNote = null;
+      for (const ev of g.events) {
+        if (ev.role === "note" && /^revise bounce/.test(ev.text)) pendingNote = ev.text;
+        if (ev.role === "dag") {
+          const dag = tryJson(ev.text);
+          if (!dag) continue;
+          const note = document.createElement("div");
+          note.className = "vnote";
+          note.textContent = dagCount === 0 ? "initial" : (pendingNote || "revised");
+          sec.appendChild(note);
+          pendingNote = null;
+
+          // diff vs previous version (match by statement text)
+          let diff = null, removed = [];
+          if (prevDag) {
+            const prevKind = new Map();
+            for (const n of (prevDag.nodes || [])) prevKind.set(n.statement, n.kind);
+            const curStmts = new Set((dag.nodes || []).map(n => n.statement));
+            diff = { newStmts: new Set(), kindChanged: new Set() };
+            for (const n of (dag.nodes || [])) {
+              if (!prevKind.has(n.statement)) diff.newStmts.add(n.statement);
+              else if (prevKind.get(n.statement) !== n.kind) diff.kindChanged.add(n.statement);
+            }
+            for (const s of prevKind.keys()) if (!curStmts.has(s)) removed.push(s);
+          }
+          sec.appendChild(buildGraph(dag, diff));
+          if (removed.length) {
+            const rl = document.createElement("div");
+            rl.className = "removedline";
+            rl.textContent = "removed: " + removed.map(trunc).join(" · ");
+            rl.title = removed.join("\n");
+            sec.appendChild(rl);
+          }
+          prevDag = dag;
+          dagCount++;
+        }
+        if (ev.role === "stage") {
+          const o = tryJson(ev.text);
+          if (o && o.rows) sec.appendChild(buildStageTable(o.rows));
+        }
+        if (ev.role === "memupdate") {
+          const o = tryJson(ev.text);
+          if (o) sec.appendChild(buildMemUpdate(o));
+        }
+      }
+    } else {
+      for (const ev of g.events) {
+        if (ev.role !== "memupdate") continue;
+        const o = tryJson(ev.text);
+        if (o) sec.appendChild(buildMemUpdate(o));
+      }
+    }
+
+    // key note lines
+    const keys = g.events.filter(ev => ev.role === "note" && KEY_NOTE.test(ev.text));
+    if (keys.length) {
+      const kl = document.createElement("div");
+      kl.className = "keylines";
+      for (const ev of keys) {
+        const d = document.createElement("div");
+        d.textContent = ev.text;
+        kl.appendChild(d);
+      }
+      sec.appendChild(kl);
+    }
+
+    // results
+    for (const ev of g.events) {
+      if (ev.role !== "result") continue;
+      const o = tryJson(ev.text) || {};
+      const [cls, label] = verdictClassText(o.verdict);
+      const r = document.createElement("div");
+      r.className = "result";
+      const v = document.createElement("span");
+      v.className = "verdict " + cls;
+      v.textContent = label;
+      r.appendChild(v);
+      const c = document.createElement("span");
+      c.textContent = o.conclusion || "";
+      r.appendChild(c);
+      sec.appendChild(r);
+    }
+
+    // memory / discard boxes at the section's end
+    for (const ev of g.events) {
+      if (ev.role === "commit") {
+        const o = tryJson(ev.text);
+        if (o) sec.appendChild(buildMemoryBox(o));
+      } else if (ev.role === "note" && ev.text.trim() === "discarded") {
+        const d = document.createElement("div");
+        d.className = "discardbox";
+        d.textContent = "discarded — nothing entered memory";
+        sec.appendChild(d);
+      }
+    }
+
+    root.appendChild(sec);
+  }
+
+  updateActivityLine();
+}
+
+let runState = "idle";
+function updateActivityLine() {
+  const root = document.getElementById("summary");
+  const old = document.getElementById("activityLine");
+  if (old) old.remove();
+  if (runState !== "running") return;
+  const last = events[events.length - 1];
+  const label = (last && last.conversation) || "working";
+  const line = document.createElement("div");
+  line.id = "activityLine";
+  line.textContent = "⏳ " + label + "…";
+  root.appendChild(line);
+}
+
+// ---- demo view -------------------------------------------------------------
+
+const truncN = (s, n) => s.length > n ? s.slice(0, n) + "…" : s;
+
+function fmtTs(ts) {
+  const d = new Date(ts);
+  return isNaN(d) ? "" : d.toTimeString().slice(0, 8);
+}
+
+function rebuildDemo() {
+  const root = document.getElementById("demo");
+  root.innerHTML = "";
+  root.appendChild(buildScoreboard());
+  root.appendChild(buildTeamPanel());
+  root.appendChild(buildStageTracker());
+  root.appendChild(buildFeed());
+}
+
+function buildScoreboard() {
+  const hyps = new Set();
+  let sup = 0, notsup = 0, inc = 0, memNew = 0, disc = 0;
+  let batchLen = null; // latest batch event's hypothesis count, when one exists
+  let capLen = null;   // rank_cap count after the latest batch, when one exists
+  for (const ev of events) {
+    if (ev.hypothesis !== null && ev.hypothesis !== undefined) hyps.add(ev.hypothesis);
+    if (ev.role === "batch") {
+      const arr = tryJson(ev.text);
+      if (Array.isArray(arr)) { batchLen = arr.length; capLen = null; }
+    } else if (ev.role === "rank_cap") {
+      const arr = tryJson(ev.text);
+      if (Array.isArray(arr)) capLen = arr.length;
+    } else if (ev.role === "result") {
+      const o = tryJson(ev.text) || {};
+      const cls = verdictClassText(o.verdict)[0];
+      if (cls === "v-green") sup++; else if (cls === "v-red") notsup++; else inc++;
+    } else if (ev.role === "commit") {
+      const o = tryJson(ev.text);
+      if (o) for (const n of (o.nodes || [])) if (n.new === true) memNew++;
+    } else if (ev.role === "note" && ev.text === "discarded") disc++;
+  }
+  const strip = document.createElement("div");
+  strip.className = "scorestrip";
+  const items = [
+    ["hypotheses: ", capLen !== null ? capLen : batchLen === null ? hyps.size : batchLen, "n-blue"],
+    ["✅ supported: ", sup, "n-green"],
+    ["❌ not supported: ", notsup, "n-red"],
+    ["➖ inconclusive: ", inc, "n-yellow"],
+    ["💾 memory nodes added: ", memNew, "n-green"],
+    ["🗑️ discarded: ", disc, "n-red"],
+  ];
+  for (const [label, n, cls] of items) {
+    const s = document.createElement("span");
+    s.appendChild(document.createTextNode(label));
+    const num = document.createElement("span");
+    num.className = "num " + cls;
+    num.textContent = n;
+    s.appendChild(num);
+    strip.appendChild(s);
+  }
+  return strip;
+}
+
+const TEAM = [
+  ["hyp", "🧠", "Hypothesis agent"],
+  ["sup", "🎯", "Supervisor"],
+  ["data", "🗄️", "Data handler"],
+  ["res", "🔬", "Researcher"],
+  ["web", "🌐", "Websearch"],
+];
+
+function teamActivity() {
+  const act = {}; // card key -> caption; empty when nothing is active
+  if (runState !== "running") return act;
+  const last = events[events.length - 1];
+  if (!last || !last.conversation) return act;
+  const c = last.conversation;
+  const idOf = s => { const m = s.match(/(?:node|inference) (\S+)/); return m ? m[1] : "?"; };
+  if (c.includes("websearch")) act.web = "checking a fact for step " + idOf(c);
+  else if (c.startsWith("researcher")) act.res = "running the experiment for step " + idOf(c);
+  else if (c.includes("data handler")) {
+    act.data = "checking there's enough data";
+    act.sup = "reviewing data-gate answers";
+  }
+  else if (c.includes("inference")) act.sup = "judging inference step " + idOf(c);
+  else if (c === "hypothesis agent — generate batch") act.hyp = "reading the question log, drafting hypotheses";
+  else if (c.includes("↔ supervisor")) {
+    act.hyp = "drafting / revising the reasoning chain";
+    act.sup = "reviewing the chain";
+  }
+  return act;
+}
+
+function buildTeamPanel() {
+  const act = teamActivity();
+  const last = events[events.length - 1];
+  const curHyp = (runState === "running" && last && last.hypothesis) || null;
+  const row = document.createElement("div");
+  row.className = "teamrow";
+  for (const [key, emoji, name] of TEAM) {
+    const card = document.createElement("div");
+    card.className = "tcard" + (act[key] ? " active" : "");
+    const n = document.createElement("div");
+    n.className = "tname";
+    n.textContent = emoji + " " + name;
+    card.appendChild(n);
+    const cap = document.createElement("div");
+    cap.className = "tcap";
+    cap.textContent = act[key] || "idle";
+    card.appendChild(cap);
+    if (act[key] && curHyp) {
+      const h = document.createElement("div");
+      h.className = "thyp";
+      h.textContent = trunc(curHyp);
+      h.title = curHyp;
+      card.appendChild(h);
+    }
+    row.appendChild(card);
+  }
+  return row;
+}
+
+const STAGE_STEPS = ["drafted", "approved", "experiments", "verdict", "saved"];
+
+function buildStageTracker() {
+  const order = [];
+  const info = new Map(); // hypothesis -> {reach, verdictCls, discarded}
+  for (const ev of events) {
+    const h = ev.hypothesis;
+    if (h === null || h === undefined) continue;
+    if (!info.has(h)) { info.set(h, { reach: -1, verdictCls: null, discarded: false }); order.push(h); }
+    const st = info.get(h);
+    const conv = ev.conversation || "";
+    if (ev.role === "dag") st.reach = Math.max(st.reach, 0);
+    if (ev.role === "stage") st.reach = Math.max(st.reach, 1);
+    if (conv.startsWith("researcher") || conv.includes("websearch")) st.reach = Math.max(st.reach, 2);
+    if (ev.role === "result") {
+      st.reach = Math.max(st.reach, 3);
+      const o = tryJson(ev.text) || {};
+      st.verdictCls = verdictClassText(o.verdict)[0];
+    }
+    if (ev.role === "commit") st.reach = Math.max(st.reach, 4);
+    if (ev.role === "note" && ev.text === "discarded") st.discarded = true;
+  }
+  const box = document.createElement("div");
+  box.className = "stagerows";
+  if (!order.length) {
+    const d = document.createElement("div");
+    d.className = "dim";
+    d.textContent = "no hypotheses yet";
+    box.appendChild(d);
+    return box;
+  }
+  const arrow = () => {
+    const a = document.createElement("span");
+    a.className = "parrow";
+    a.textContent = "→";
+    return a;
+  };
+  for (const h of order) {
+    const st = info.get(h);
+    const row = document.createElement("div");
+    row.className = "srow";
+    const lab = document.createElement("span");
+    lab.className = "shyp";
+    lab.textContent = trunc(h);
+    lab.title = h;
+    row.appendChild(lab);
+    const lastShown = st.discarded ? st.reach : STAGE_STEPS.length - 1;
+    for (let i = 0; i <= lastShown; i++) {
+      if (i > 0) row.appendChild(arrow());
+      const p = document.createElement("span");
+      p.className = "pill";
+      if (i <= st.reach) {
+        p.classList.add("reached");
+        if (i === st.reach && !st.discarded && st.reach < 4) p.classList.add("current");
+        if (i === 3 && st.verdictCls) p.classList.add("p-" + st.verdictCls.slice(2));
+        if (i === 4) p.classList.add("p-green");
+      }
+      p.textContent = STAGE_STEPS[i];
+      row.appendChild(p);
+    }
+    if (st.discarded) {
+      if (st.reach >= 0) row.appendChild(arrow());
+      const p = document.createElement("span");
+      p.className = "pill reached p-red";
+      p.textContent = "discarded";
+      row.appendChild(p);
+    }
+    box.appendChild(row);
+  }
+  return box;
+}
+
+// one plain-English feed entry per matching event; null = skip.
+// returns {text, title?} or {payoff: resultObj}
+function feedEntry(ev, dagCounts) {
+  if (ev.role === "batch") {
+    const arr = tryJson(ev.text);
+    const n = Array.isArray(arr) ? arr.length : 0;
+    return { text: "🧪 Hypothesis batch ready — " + n + " hypotheses drafted from the question log" };
+  }
+  if (ev.role === "rank_cap") {
+    const arr = tryJson(ev.text);
+    const n = Array.isArray(arr) ? arr.length : 0;
+    return { text: "✂️ Ranked and kept the top " + n + " hypotheses" };
+  }
+  if (ev.role === "dag") {
+    const o = tryJson(ev.text) || {};
+    const n = (o.nodes || []).length;
+    const k = JSON.stringify(ev.hypothesis);
+    const seen = dagCounts.get(k) || 0;
+    dagCounts.set(k, seen + 1);
+    return { text: seen === 0 ? "📋 Reasoning chain drafted — " + n + " steps"
+                              : "📋 Chain revised — now " + n + " steps" };
+  }
+  if (ev.role === "stage") {
+    const o = tryJson(ev.text) || {};
+    return { text: "🎯 Supervisor approved the chain — dispatching " + (o.rows || []).length + " steps" };
+  }
+  if (ev.role === "result") return { payoff: tryJson(ev.text) || {} };
+  if (ev.role === "memupdate") {
+    const o = tryJson(ev.text) || {};
+    const outcome = o.outcome === null || o.outcome === undefined ? "" : String(o.outcome);
+    return { text: "📥 Memory updated: " + (o.node || "?") + " (" + (o.kind || "?") + ") — " + truncN(outcome, 80),
+             title: outcome };
+  }
+  if (ev.role === "commit") {
+    const o = tryJson(ev.text) || {};
+    const nodes = o.nodes || [];
+    const m = nodes.filter(n => n.new === true).length;
+    return { text: "💾 Saved to memory as " + (o.hypothesis_id || "?") + " (" + nodes.length + " nodes, " + m + " new)" };
+  }
+  if (ev.role !== "note") return null; // prompt / reply skipped
+  const t = ev.text;
+  if (t.startsWith("questions fed in:"))
+    return { text: "🧠 Hypothesis agent read the question log and is drafting this run's hypotheses…" };
+  if (t.startsWith("revise bounce"))
+    return { text: "↩️ Supervisor sent it back — " + t.slice(t.indexOf(":") + 1).trim().replace(/\n/g, " ") };
+  if (t === "discarded") return { text: "🗑️ Discarded — never became testable" };
+  if (t.startsWith("gate pass — "))
+    return { text: "✅ Data handler: enough data for step " + t.slice("gate pass — ".length) };
+  if (t.startsWith("gate fail — "))
+    return { text: "⛔ Data handler: not enough data — " + t.slice("gate fail — ".length) };
+  if (t === "gate: pass") return { text: "✅ Experiment sanity check passed" };
+  if (t.startsWith("gate: fail"))
+    return { text: "⛔ Experiment sanity check failed — " + t.slice(t.indexOf("—") + 1).trim() };
+  if (t === "design: experiment form ready") return { text: "🧪 Experiment designed" };
+  if (t.startsWith("run: verdict="))
+    return { text: "📊 Experiment ran — " + t.slice("run: verdict=".length) };
+  if (t === "interpret: done") return { text: "🔍 Researcher interpreted the numbers" };
+  if (t.startsWith("step cached")) return { text: "♻️ Step already answered in a past run — reused" };
+  if (t.startsWith("run finished")) return { text: "🏁 Run finished" };
+  if (t.startsWith("run crashed")) return { text: "💥 Run crashed — open the Chat view for the traceback" };
+  if (t.startsWith("run stopped")) return { text: "🛑 Run stopped" };
+  return null; // record: verdict / committed as / others — covered elsewhere
+}
+
+function buildFeed() {
+  const feed = document.createElement("div");
+  feed.className = "feed";
+  const dagCounts = new Map(); // hypothesis key -> dag events seen so far
+  for (const ev of events) {
+    const entry = feedEntry(ev, dagCounts);
+    if (!entry) continue;
+    const line = document.createElement("div");
+    line.className = "fline";
+    const ts = document.createElement("span");
+    ts.className = "fts";
+    ts.textContent = fmtTs(ev.ts);
+    line.appendChild(ts);
+    if (ev.hypothesis !== null && ev.hypothesis !== undefined) {
+      const h = document.createElement("span");
+      h.className = "fhyp";
+      h.textContent = truncN(ev.hypothesis, 40);
+      h.title = ev.hypothesis;
+      line.appendChild(h);
+    }
+    if (entry.payoff) {
+      const p = document.createElement("div");
+      p.className = "payoff";
+      const [cls, label] = verdictClassText(entry.payoff.verdict);
+      const v = document.createElement("span");
+      v.className = "verdict " + cls;
+      v.textContent = label;
+      p.appendChild(v);
+      p.appendChild(document.createTextNode(entry.payoff.conclusion || ""));
+      line.appendChild(p);
+    } else {
+      const s = document.createElement("span");
+      s.textContent = entry.text;
+      if (entry.title) s.title = entry.title;
+      line.appendChild(s);
+    }
+    feed.appendChild(line);
+  }
+  return feed;
+}
+
+// ---- nav / chips -----------------------------------------------------------
+
+function rebuildNav() {
+  const hypRow = document.getElementById("hypRow");
+  const convRow = document.getElementById("convRow");
+  hypRow.innerHTML = "";
+  convRow.innerHTML = "";
+
+  const visible = events.slice(view === "summary" ? clearSummaryBefore : clearChatBefore);
+  const last = visible[visible.length - 1];
+  const hyps = [];               // in order of first appearance; null allowed
+  const convsByHyp = new Map();  // hypLabel-ish key -> [conv,...]
+  for (const ev of visible) {
+    const k = JSON.stringify(ev.hypothesis);
+    if (!convsByHyp.has(k)) { convsByHyp.set(k, []); hyps.push(ev.hypothesis); }
+    const convs = convsByHyp.get(k);
+    if (!convs.includes(ev.conversation)) convs.push(ev.conversation);
+  }
+
+  const showAll = document.createElement("span");
+  showAll.className = "chip" + (filter === null ? " selected" : "");
+  showAll.textContent = "show all";
+  showAll.onclick = () => { filter = null; selectedHyp = undefined; rerender(); };
+  hypRow.appendChild(showAll);
+
+  for (const h of hyps) {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    if (last && last.hypothesis === h) chip.classList.add("active");
+    if (selectedHyp !== undefined && selectedHyp === h) chip.classList.add("selected");
+    chip.textContent = trunc(hypLabel(h));
+    chip.title = hypLabel(h);
+    chip.onclick = () => {
+      selectedHyp = h;
+      rebuildNav();
+      if (view === "summary") {
+        const el = document.getElementById(sectionIdOf(h));
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+    hypRow.appendChild(chip);
+  }
+
+  if (selectedHyp !== undefined && convsByHyp.has(JSON.stringify(selectedHyp))) {
+    for (const c of convsByHyp.get(JSON.stringify(selectedHyp))) {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      if (last && last.hypothesis === selectedHyp && last.conversation === c) chip.classList.add("active");
+      if (filter && filter.hyp === selectedHyp && filter.conv === c) chip.classList.add("selected");
+      chip.textContent = trunc(c === null ? "(no conversation)" : c);
+      chip.title = c === null ? "(no conversation)" : c;
+      chip.onclick = () => { filter = { hyp: selectedHyp, conv: c }; rerender(); };
+      convRow.appendChild(chip);
+    }
+  }
+}
+
+function rerender() {
+  document.getElementById("log").innerHTML = "";
+  lastRendered = null;
+  const visible = events.slice(clearChatBefore);
+  if (filter === null) {
+    for (const ev of visible) renderEvent(ev, true);
+    renderedCount = events.length;
+  } else {
+    for (const ev of visible)
+      if (ev.hypothesis === filter.hyp && ev.conversation === filter.conv) renderEvent(ev, false);
+  }
+  rebuildNav();
+}
+
+// stick-to-bottom: the whole page scrolls (window), for both views.
+// Follow new content only while the user is at (or near) the bottom.
+let stickToBottom = true;
+function atBottom() {
+  return window.innerHeight + window.scrollY >= document.body.scrollHeight - 40;
+}
+function scrollToBottom() {
+  stickToBottom = true;
+  window.scrollTo(0, document.body.scrollHeight);
+}
+window.addEventListener("scroll", () => { stickToBottom = atBottom(); });
+
+// ---- sidebar: questions -> hypothesis queue --------------------------------
+
+// pure: derive the hypothesis queue from the event list + run state.
+// null when no batch event exists (sidebar keeps showing the questions).
+// A later batch event wins: only events after it are matched.
+function deriveQueue(evts, state) {
+  let batchIdx = -1, statements = null;
+  for (let i = 0; i < evts.length; i++) {
+    if (evts[i].role !== "batch") continue;
+    const arr = tryJson(evts[i].text);
+    if (Array.isArray(arr)) { batchIdx = i; statements = arr; }
+  }
+  if (batchIdx === -1) return null;
+  // a rank_cap event after the latest batch replaces the statement list
+  // (capped, ranked); any rank_cap before a later batch is ignored above.
+  for (let i = batchIdx + 1; i < evts.length; i++) {
+    if (evts[i].role !== "rank_cap") continue;
+    const arr = tryJson(evts[i].text);
+    if (Array.isArray(arr)) statements = arr;
+  }
+  const entries = statements.map(s => ({
+    statement: s, status: "pending", saved: false, discarded: false, verdictCls: null,
+  }));
+  const byLabel = new Map(); // 80-char label -> entry
+  for (const e of entries) byLabel.set(e.statement.slice(0, 80), e);
+  const byId = new Map();    // memory hypothesis id (from commit) -> entry
+  for (let i = batchIdx + 1; i < evts.length; i++) {
+    const ev = evts[i];
+    if (ev.hypothesis === null || ev.hypothesis === undefined) continue;
+    const e = byLabel.get(ev.hypothesis) || byId.get(ev.hypothesis);
+    if (!e) continue;
+    if (ev.role === "commit") {
+      const o = tryJson(ev.text);
+      if (o && o.hypothesis_id) byId.set(o.hypothesis_id, e);
+      e.saved = true;
+    } else if (ev.role === "note" && ev.text === "discarded") {
+      e.discarded = true;
+    } else if (ev.role === "result") {
+      const o = tryJson(ev.text) || {};
+      e.verdictCls = verdictClassText(o.verdict)[0];
+    }
+  }
+  for (const e of entries) {
+    if (e.discarded) e.status = "discarded";
+    else if (e.verdictCls) e.status = "verdict";
+    else if (e.saved) e.status = "saved";
+  }
+  const last = evts[evts.length - 1];
+  if (state === "running" && last && last.hypothesis !== null && last.hypothesis !== undefined) {
+    const e = byLabel.get(last.hypothesis) || byId.get(last.hypothesis);
+    if (e && e.status === "pending") e.status = "active";
+  }
+  return entries;
+}
+
+const QUEUE_MARKS = {
+  pending: ["●", "m-pending"],
+  active: ["●", "m-active"],
+  saved: ["✓", "m-green"],
+  discarded: ["✗", "m-red"],
+};
+const FLASH_COLORS = { "m-green": "#1d3323", "m-red": "#3a1f1f", "m-yellow": "#383219" };
+
+const prevQueueStatus = new Map(); // statement -> last derived status key (for the flash)
+
+function rebuildSidebar() {
+  const startBtn = document.getElementById("startBtn");
+  const queue = deriveQueue(events, runState);
+  if (startBtn) startBtn.style.display = queue && runState === "running" ? "none" : "";
+  if (!queue) return; // no batch yet: keep the question list
+  document.getElementById("menuTitle").textContent = "Hypotheses";
+  const list = document.getElementById("qlist");
+  list.innerHTML = "";
+  for (const e of queue) {
+    const item = document.createElement("div");
+    item.className = "hitem";
+    const [glyph, cls] = e.status === "verdict"
+      ? ["✓", "m-" + e.verdictCls.slice(2)]
+      : QUEUE_MARKS[e.status];
+    const mark = document.createElement("span");
+    mark.className = "qmark " + cls;
+    mark.textContent = glyph;
+    item.appendChild(mark);
+    const text = document.createElement("span");
+    text.className = "qtext";
+    text.textContent = truncN(e.statement, 70);
+    text.title = e.statement;
+    item.appendChild(text);
+    const cur = e.status + (e.verdictCls ? ":" + e.verdictCls : "");
+    const prev = prevQueueStatus.get(e.statement);
+    if (prev !== undefined && prev !== cur &&
+        (e.status === "saved" || e.status === "discarded" || e.status === "verdict")) {
+      item.classList.add("qflash");
+      item.style.setProperty("--flash", FLASH_COLORS[cls] || "#26314a");
+    }
+    prevQueueStatus.set(e.statement, cur);
+    list.appendChild(item);
+  }
+}
+
+async function loadQuestions() {
+  const menu = document.getElementById("menu");
+  const btn = document.createElement("button");
+  btn.id = "startBtn";
+  btn.textContent = "▶ Start research run";
+  btn.onclick = startRun;
+  menu.insertBefore(btn, menu.firstChild);
+  try {
+    const res = await fetch("/questions");
+    const qs = await res.json();
+    const list = document.getElementById("qlist");
+    list.innerHTML = "";
+    for (const q of qs) {
+      const item = document.createElement("div");
+      item.className = "qitem";
+      const text = document.createElement("span");
+      text.className = "qtext";
+      text.textContent = q;
+      item.appendChild(text);
+      list.appendChild(item);
+    }
+  } catch (e) {}
+}
+
+async function startRun() {
+  setMenuEnabled(false);
+  try { await fetch("/run", { method: "POST" }); } catch (e) {}
+}
+
+function setMenuEnabled(on) {
+  const b = document.getElementById("startBtn");
+  if (b) b.disabled = !on;
+}
+
+async function stopRun() {
+  document.getElementById("stopBtn").disabled = true;
+  try { await fetch("/stop", { method: "POST" }); } catch (e) {}
+}
+
+async function pollStatus() {
+  try {
+    const res = await fetch("/status");
+    const { state } = await res.json();
+    setMenuEnabled(state === "idle");
+    document.getElementById("stopBtn").disabled = state !== "running";
+    if (state !== runState) {
+      runState = state;
+      if (view === "summary") updateActivityLine();
+      if (view === "demo") rebuildDemo();
+      rebuildSidebar();
+    }
+  } catch (e) {}
+}
+
+async function poll() {
+  try {
+    const res = await fetch("/events");
+    const all = await res.json();
+    const fresh = all.slice(events.length);
+    if (!fresh.length) return;
+    for (const ev of fresh) {
+      events.push(ev);
+      if (ev.tokens) { totIn += ev.tokens.input || 0; totOut += ev.tokens.output || 0; }
+    }
+    document.getElementById("tokens").textContent = "tokens: " + totIn + " in / " + totOut + " out";
+    if (filter === null) {
+      for (const ev of fresh) renderEvent(ev, true);
+      renderedCount = events.length;
+    } else {
+      for (const ev of fresh)
+        if (ev.hypothesis === filter.hyp && ev.conversation === filter.conv) renderEvent(ev, false);
+    }
+    if (view === "summary") rebuildSummary();
+    if (view === "demo") rebuildDemo();
+    rebuildNav();
+    rebuildSidebar();
+    document.getElementById("status").textContent = events.length + " events — " + new Date().toLocaleTimeString();
+    if (stickToBottom) window.scrollTo(0, document.body.scrollHeight);
+  } catch (e) {
+    document.getElementById("status").textContent = "fetch failed: " + e;
+  }
+}
+loadQuestions();
+rebuildDemo();
+poll();
+pollStatus();
+setInterval(poll, 1500);
+setInterval(pollStatus, 1500);
+</script>
+</body>
+</html>

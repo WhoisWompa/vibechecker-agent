@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vibechecker — live</title>
+<style>
+  :root { --bg:#14161a; --panel:#191c22; --line:#2c313a; --ink:#d8dbe0; --muted:#6b7280;
+          --blue:#8ab4f8; --green:#9fd0a5; --green2:#3fa557; --amber:#e8c96b; --red:#e8896b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:Consolas,"Courier New",monospace; }
+  #top { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:14px; padding:10px 18px;
+         background:var(--panel); border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  #top h1 { font-size:17px; margin:0; letter-spacing:.08em; color:var(--blue); }
+  button { font:inherit; font-size:14px; padding:6px 18px; cursor:pointer; border-radius:4px;
+           background:#1d2a1f; color:var(--green); border:1px solid var(--green2); }
+  button:disabled { color:var(--muted); border-color:var(--line); background:var(--panel); cursor:default; }
+  #researchbtn { background:#1a2130; color:var(--blue); border-color:#3b5b8f; }
+  label { font-size:13px; color:var(--muted); display:flex; align-items:center; gap:6px; }
+  input[type=number] { font:inherit; width:56px; background:var(--bg); color:var(--ink);
+                       border:1px solid var(--line); border-radius:4px; padding:4px 6px; }
+  .pill { font-size:12px; padding:2px 10px; border:1px solid var(--line); border-radius:10px; color:var(--muted); }
+  .pill.running, .pill.analysis { color:var(--green); border-color:var(--green2); }
+  .pill.crashed { color:var(--red); border-color:var(--red); }
+  #simclock { margin-left:auto; text-align:right; }
+  #simclock .t { font-size:26px; color:var(--ink); }
+  #simclock .d { font-size:12px; color:var(--muted); }
+  #main { display:flex; align-items:stretch; height:calc(100vh - 56px); }
+  #cafe { flex:1.15; padding:14px 18px; border-right:1px solid var(--line); overflow-y:auto; min-width:0; }
+  #agents { flex:1; display:flex; flex-direction:column; min-width:0; }
+  h2 { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.15em; margin:8px 0; }
+  #daystrip { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px; }
+  .daychip { font-size:12px; padding:3px 10px; border:1px solid var(--line); border-radius:4px; color:var(--muted); }
+  .daychip b { color:var(--green); font-weight:normal; }
+  #occwrap { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px; }
+  #tiles, #sensors { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px; }
+  .tile { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px 12px; }
+  .tile .v { font-size:24px; } .tile .u { font-size:12px; color:var(--muted); }
+  .tile .l { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+  .tile.set .v { color:var(--blue); }
+  #closecard { margin-top:12px; background:#16211a; border:1px solid var(--green2); border-radius:6px;
+               padding:10px 14px; font-size:14px; display:none; }
+  #feed { flex:1; overflow-y:auto; padding:10px 16px; font-size:14px; line-height:1.55; }
+  .ev { padding:5px 0; border-bottom:1px solid #1b1f26; word-break:break-word; }
+  .ev .ico { display:inline-block; width:26px; }
+  .ev .dim { color:var(--muted); font-size:12px; }
+  .ev .q { color:var(--amber); }
+  .ev .ans { color:var(--green); }
+  .ev.research { background:#151a24; margin:2px -8px; padding:6px 8px; border:none; border-left:2px solid var(--blue); }
+  .ev.head { color:var(--blue); border-bottom:1px solid var(--line); padding-top:14px; font-size:15px; }
+  #feedtop { padding:8px 16px 0; }
+  #hint { font-size:12px; color:var(--muted); padding:4px 16px 8px; border-bottom:1px solid var(--line); }
+  svg text { font-family:inherit; }
+</style>
+</head>
+<body>
+<div id="top">
+  <h1>VIBECHECKER · LIVE</h1>
+  <label>days <input type="number" id="daysin" min="1" max="30" value="3"></label>
+  <label><input type="checkbox" id="freshin" checked> clean start</label>
+  <button id="runbtn" onclick="startRun()">RUN SIMULATION</button>
+  <button id="researchbtn" onclick="startResearch()" disabled>RUN RESEARCH</button>
+  <span class="pill" id="statuspill">idle</span>
+  <div id="simclock"><div class="t" id="clk">--:--</div><div class="d" id="clkd"></div></div>
+</div>
+<div id="main">
+  <div id="cafe">
+    <h2>the cafe — one simulated day ≈ 15 s</h2>
+    <div id="daystrip"></div>
+    <div id="occwrap">
+      <svg id="occ" width="100%" height="190" viewBox="0 0 760 190" preserveAspectRatio="none"></svg>
+      <div style="font-size:11px;color:var(--muted)">people inside — <span id="occnow">0</span> now, peak <span id="occpeak">0</span></div>
+    </div>
+    <div id="tiles">
+      <div class="tile set"><div class="l">light</div><div class="v" id="s_light">–</div><div class="u">lux set</div></div>
+      <div class="tile set"><div class="l">thermostat</div><div class="v" id="s_temp">–</div><div class="u">°C set</div></div>
+      <div class="tile set"><div class="l">music</div><div class="v" id="s_vol">–</div><div class="u">dB set</div></div>
+      <div class="tile set"><div class="l">fan</div><div class="v" id="s_fan">–</div><div class="u">0–5</div></div>
+    </div>
+    <div id="sensors">
+      <div class="tile"><div class="l">room temp</div><div class="v" id="r_temp">–</div><div class="u">°C read</div></div>
+      <div class="tile"><div class="l">co2</div><div class="v" id="r_co2">–</div><div class="u">ppm</div></div>
+      <div class="tile"><div class="l">light read</div><div class="v" id="r_light">–</div><div class="u">lux</div></div>
+      <div class="tile"><div class="l">noise</div><div class="v" id="r_noise">–</div><div class="u">dB</div></div>
+    </div>
+    <div id="closecard"></div>
+  </div>
+  <div id="agents">
+    <div id="feedtop"><h2>the agents — what they are doing, live</h2></div>
+    <div id="hint">blue = planning and watching · <span class="q">amber = a question the room can't answer yet</span> · <span class="ans">green = something learned</span></div>
+    <div id="feed"></div>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const feedEl = $("feed");
+let feedAt = 0, msgAt = 0, aAt = 0, aDate = null, started = false;
+let curDate = null, occPts = [], occPeak = 0, closedDays = [], bankSeen = 0, lastConv = "";
+
+const clock = t => `${String(8 + Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`;
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+function addEv(cls, ico, html) {
+  const nearBottom = feedEl.scrollHeight - feedEl.scrollTop - feedEl.clientHeight < 90;
+  const e = document.createElement("div");
+  e.className = "ev " + cls;
+  e.innerHTML = `<span class="ico">${ico}</span>${html}`;
+  feedEl.appendChild(e);
+  while (feedEl.children.length > 500) feedEl.removeChild(feedEl.firstChild);
+  if (nearBottom) feedEl.scrollTop = feedEl.scrollHeight;
+}
+
+function drawOcc() {
+  const svg = $("occ"), W = 760, H = 190;
+  if (!occPts.length) { svg.innerHTML = ""; return; }
+  const maxY = Math.max(10, occPeak) * 1.15;
+  const px = t => 8 + t / 840 * (W - 16), py = v => H - 18 - v / maxY * (H - 30);
+  let d = occPts.map((p,i) => (i?"L":"M") + px(p[0]).toFixed(1) + " " + py(p[1]).toFixed(1)).join(" ");
+  const area = d + ` L${px(occPts[occPts.length-1][0]).toFixed(1)} ${H-18} L${px(occPts[0][0]).toFixed(1)} ${H-18} Z`;
+  svg.innerHTML =
+    `<path d="${area}" fill="rgba(138,180,248,.2)"/>` +
+    `<path d="${d}" fill="none" stroke="#8ab4f8" stroke-width="2"/>` +
+    `<line x1="8" y1="${H-18}" x2="${W-8}" y2="${H-18}" stroke="#2c313a"/>` +
+    [0,240,480,720,839].map(t => `<text x="${px(t)}" y="${H-4}" fill="#3a3f48" font-size="11">${clock(t)}</text>`).join("");
+}
+
+function onMinute(m) {
+  if (m.date !== curDate) {
+    curDate = m.date; occPts = []; occPeak = 0; $("closecard").style.display = "none";
+    addEv("head", "🌅", `${esc(m.weekday)} ${esc(m.date)} — the daily agent planned the morning; the day begins`);
+  }
+  $("clk").textContent = clock(m.t);
+  $("clkd").textContent = `${m.weekday || ""} ${m.date}`;
+  occPts.push([m.t, m.occupancy ?? 0]);
+  occPeak = Math.max(occPeak, m.occupancy ?? 0);
+  $("occnow").textContent = Math.round(m.occupancy ?? 0);
+  $("occpeak").textContent = Math.round(occPeak);
+  const set = (id, v, dp) => { if (v != null) $(id).textContent = dp ? (+v).toFixed(dp) : Math.round(v); };
+  set("s_light", m.light_set); set("s_temp", m.temperature_set, 1); set("s_vol", m.volume); set("s_fan", m.fan);
+  set("r_temp", m.temperature_sensor, 1); set("r_co2", m.co2); set("r_light", m.light_sensor); set("r_noise", m.noise);
+  if (occPts.length % 4 === 0 || m.t >= 839) drawOcc();
+}
+
+async function onDayClose(date) {
+  try {
+    const d = await (await fetch(`/file?name=days/${date}.json`)).json();
+    const stay = d.hidden_score ? d.hidden_score.stay : d.stay_est_min;
+    closedDays.push({ date, stay });
+    $("daystrip").innerHTML = closedDays.map(x =>
+      `<span class="daychip">${x.date.slice(5)} · stay <b>${x.stay != null ? x.stay.toFixed(1) : "–"}m</b></span>`).join("");
+    const c = $("closecard");
+    c.style.display = "block";
+    c.innerHTML = `<b>${d.weekday} ${date} closed</b> — ${d.entered} guests came in · they stayed ~${(stay ?? 0).toFixed(1)} min on average · ` +
+      `the plan was rewritten ${d.replans}× during the day · ${d.questions_banked} new question(s) for research`;
+    addEv("log", "🌙", `the cafe closed: ${d.entered} guests, ~${(stay ?? 0).toFixed(1)} min average stay, ` +
+      `<span class="q">${d.questions_banked} question(s) it couldn't answer</span>`);
+  } catch (e) {}
+}
+
+/* runner log lines -> plain sentences */
+function onLog(msg) {
+  let m;
+  if ((m = msg.match(/^(\d\d:\d\d) discrepancy:?\s*(.*)/)))
+    addEv("log", "👀", `<b>${m[1]}</b> — the intraday agent noticed: ${esc(m[2])}`);
+  else if ((m = msg.match(/^(\d\d:\d\d) pushed \((\w+)\):?\s*(.*)/)))
+    addEv("log", "✏️", `<b>${m[1]}</b> — it rewrote the rest of the day: ${esc(m[3].split("; held:")[0])}`);
+  else if ((m = msg.match(/^(\d\d:\d\d) model looked and kept the plan/)))
+    addEv("log", "👌", `<b>${m[1]}</b> — the agent looked and kept the plan`);
+  else if ((m = msg.match(/^(\d\d:\d\d) no setting changed \((\w+)\):?\s*(.*)/)))
+    addEv("log", "👌", `<b>${m[1]}</b> — looked, nothing worth changing`);
+  else if (/^after close/.test(msg) || /^bank:/.test(msg) || /research pass/.test(msg))
+    addEv("log", "·", `<span class="dim">${esc(msg)}</span>`);
+  else
+    addEv("log", "·", `<span class="dim">${esc(msg.slice(0, 180))}</span>`);
+}
+
+/* model calls -> who is thinking about what */
+function onMessage(m) {
+  if (m.error) { addEv("log", "⚠️", `<span class="dim">a model call failed and was retried/skipped</span>`); return; }
+  const q = (m.questions || [])[0];
+  const at = m.loop && m.loop.includes("@") ? clock(+m.loop.split("@")[1]) : null;
+  if (m.agent === "memory" && q)
+    addEv("call", "❓", `the plan asked the memory: <span class="q">“${esc(q)}”</span>`);
+  else if (m.agent === "daily")
+    addEv("call", "🌅", `the daily agent is planning the day <span class="dim">(thought for ${(m.latency_s ?? 0).toFixed(0)}s)</span>`);
+  else if (m.agent === "intraday")
+    addEv("call", "🤔", `${at ? `<b>${at}</b> — ` : ""}the intraday agent is deciding whether to change the room <span class="dim">(${(m.latency_s ?? 0).toFixed(0)}s)</span>`);
+  else
+    addEv("call", "·", `<span class="dim">${esc(m.agent || "model")} call</span>`);
+}
+
+/* research pass events -> activity lines, no raw text */
+const CONV_NICE = [
+  [/generate batch/, "💡 the hypothesis agent is proposing ideas to test"],
+  [/hypothesis agent ↔ supervisor/, "⚖️ the supervisor is checking a hypothesis step by step"],
+  [/data gate/, "📊 the data handler is checking there is enough data to test"],
+  [/researcher — (node \w+)/, "🔬 a researcher is running an experiment on the room's history"],
+  [/websearch/, "🌐 the websearch agent is answering a general fact"],
+  [/supervisor — inference/, "⚖️ the supervisor is judging what the result proves"],
+];
+function onAEvent(e) {
+  if (e.role === "note") {
+    const t = String(e.text || "");
+    if (t.startsWith("after close")) {
+      const qs = t.split("\n").slice(1);
+      addEv("research", "📥", `${qs.length} open question(s) go to the research team:` +
+        qs.slice(0, 6).map(x => `<br><span class="q">· ${esc(x)}</span>`).join(""));
+    } else if (t.startsWith("run finished"))
+      addEv("research", "🏁", "the research run finished — writing verdicts into memory");
+    return;
+  }
+  if (e.role !== "prompt") return;                    // replies are internal detail
+  const key = (e.conversation || "") + "|" + (e.hypothesis || "");
+  if (key === lastConv) return;                       // one line per stage, not per call
+  lastConv = key;
+  for (const [re, nice] of CONV_NICE) {
+    if (re.test(e.conversation || "")) {
+      addEv("research", "", nice + (e.hypothesis ? `<br><span class="dim">on: “${esc(e.hypothesis)}”</span>` : ""));
+      return;
+    }
+  }
+  addEv("research", "·", `<span class="dim">${esc(e.conversation || "working")}</span>`);
+}
+
+function onFeedEvent(ev) {
+  if (ev.kind === "minute") onMinute(ev);
+  else if (ev.kind === "day_close") onDayClose(ev.date);
+  else if (ev.kind === "log") onLog(String(ev.msg || ""));
+  else if (ev.kind === "analysis" && ev.status === "start") {
+    aDate = ev.date; aAt = 0; lastConv = "";
+    addEv("head", "🔬", `after close ${esc(ev.date)} — the research team studies the room's own history`);
+  } else if (ev.kind === "analysis" && ev.status === "end") { finishAnalysis(ev.date); aDate = null; }
+  else if (ev.kind === "finished") addEv("head", "✓", "run finished — everything you watched is saved in the state folder");
+  else if (ev.kind === "crashed") addEv("head", "✗", `crashed: <span class="dim">${esc((ev.error || "").slice(-300))}</span>`);
+}
+
+async function finishAnalysis(date) {
+  try {
+    const a = await (await fetch(`/file?name=analysis/${date}.json`)).json();
+    (a.answered || []).forEach(x =>
+      addEv("research", "✅", `<span class="q">“${esc(x.question)}”</span><br><span class="ans">→ ${esc(x.answer)}</span>`));
+    const grew = (a.checklist_after || []).filter(l => !(a.checklist_before || []).includes(l));
+    grew.forEach(l => addEv("research", "📝", `new habit on the checklist: <span class="ans">${esc(l)}</span>`));
+    addEv("head", "🔬", `research done: ${(a.answered || []).length} question(s) answered by experiment, ` +
+      `${(a.still_open || []).length} still open for next time`);
+  } catch (e) { addEv("head", "🔬", "research pass done"); }
+}
+
+/* the question bank, watched for new entries */
+async function pollBank() {
+  try {
+    const b = await (await fetch("/file?name=question_bank.json")).json();
+    for (let i = bankSeen; i < b.length; i++) {
+      const q = b[i];
+      if (q.status === "open")
+        addEv("bank", "🗂", `memory had no answer — <span class="q">“${esc(q.question)}”</span> is banked for the research team` +
+          (q.situation ? `<br><span class="dim">because: ${esc(q.situation)}</span>` : ""));
+    }
+    bankSeen = b.length;
+  } catch (e) {}
+}
+
+async function poll() {
+  try {
+    const st = await (await fetch("/status")).json();
+    const pill = $("statuspill");
+    pill.textContent = st.state === "analysis" ? "research running" : st.state;
+    pill.className = "pill " + st.state;
+    const busy = st.state === "running" || st.state === "analysis";
+    $("runbtn").disabled = busy;
+    $("researchbtn").disabled = busy || !st.last_date;
+    if (busy) started = true;
+    if (started) {
+      const evs = await (await fetch(`/feed?after=${feedAt}`)).json();
+      evs.forEach(e => { try { onFeedEvent(e); } catch (err) {} feedAt = e.i + 1; });
+      const msgs = await (await fetch(`/messages?after=${msgAt}`)).json();
+      msgs.forEach(m => { try { onMessage(m); } catch (err) {} msgAt = m.i + 1; });
+      if (aDate) {
+        const aevs = await (await fetch(`/aevents?date=${aDate}&after=${aAt}`)).json();
+        aevs.forEach(e => { try { onAEvent(e); } catch (err) {} aAt = e.i + 1; });
+      }
+      await pollBank();
+    }
+  } catch (e) {}
+  setTimeout(poll, 500);
+}
+
+async function startRun() {
+  $("runbtn").disabled = true;
+  await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ days: +$("daysin").value || 3, fresh: $("freshin").checked }) });
+  feedEl.innerHTML = ""; feedAt = 0; msgAt = 0; bankSeen = 0; closedDays = []; $("daystrip").innerHTML = "";
+  started = true;
+  addEv("head", "▶", `simulation started — ${+$("daysin").value || 3} day(s), real agents, real room`);
+}
+
+async function startResearch() {
+  $("researchbtn").disabled = true;
+  await fetch("/analyze", { method: "POST" });
+}
+poll();
+</script>
+</body>
+</html>
